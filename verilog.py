@@ -1,6 +1,6 @@
 """
-# Verilog Reading
-via `pyverilog.vparser.ast`, transforming its AST nodes into `Design` and `Module` counterparts.
+Verilog Reading via `pyverilog.vparser.ast`, transforming its AST nodes into 
+`Design` and `Module` counterparts.
 """
 
 from typing import List 
@@ -11,7 +11,7 @@ from pyverilog.vparser import parser as verilog_parser
 import pyverilog.vparser.ast as ast
 
 # Local Imports 
-from circuit import Module, VerilogIdentifier, Port, Instance, Connection, Slice
+from circuit import Module, VerilogIdentifier, Port, Instance, Connection, Slice, Assignment
 
 
 class DesignReader:
@@ -84,9 +84,95 @@ class ModuleReader:
       elif isinstance(child, ast.InstanceList):
         ModuleReader.LoadInstanceList(module, child)
       elif isinstance(child, ast.Assign):
-        raise NotImplementedError(f"`assign` statement {child}")
+        ModuleReader.LoadAssign(module, child)
       else:
         warn(f'skipping child: {child}')
+
+  @staticmethod
+  def LoadPointer(module: Module, ast_pointer: ast.Pointer):
+    net_name = VerilogIdentifier(ast_pointer.var.name).raw
+    signal = module.GetOrCreateSignal(net_name)
+    assert isinstance(ast_pointer.ptr, ast.IntConst)
+    index = int(ast_pointer.ptr.value)
+
+    # Can't call it 'slice', it's a keyword.
+    the_slice  = Slice()
+    the_slice.signal = signal
+    the_slice.top = index
+    the_slice.bottom = index
+    return the_slice
+
+  @staticmethod
+  def LoadPartselect(module: Module, ast_partselect: ast.Partselect):
+    name = VerilogIdentifier(ast_partselect.var.name).raw
+    signal = module.GetOrCreateSignal(name)
+    assert isinstance(ast_partselect.msb, ast.IntConst)
+    assert isinstance(ast_partselect.lsb, ast.IntConst)
+
+    the_slice  = Slice()
+    the_slice.signal = signal
+    the_slice.top = int(ast_partselect.msb.value)
+    the_slice.bottom = int(ast_partselect.lsb.value)
+    return the_slice
+
+  @staticmethod
+  def LoadAssign(module: Module, ast_assign: ast.Assign):
+    # Expect ast_assign.left to be an ast.Lvalue object, and ast_assign.right to
+    # be an ast.Rvalue object.
+    left = ast_assign.left.var
+    right = ast_assign.right.var
+
+    # The left and right sides of the assignment are assignable objects, meaning
+    # they need to track the assignments they participate in for when we
+    # traverse the graph later.
+
+    assignment = Assignment()
+
+    if isinstance(left, ast.Identifier):
+      # Signal name, str.
+      name = VerilogIdentifier(left.name).raw
+      signal = module.GetOrCreateSignal(name)
+      assignment.left = signal
+      signal.AddAssignment(assignment)
+    elif isinstance(left, ast.Pointer):
+      # Signal with single index.
+      left_slice = ModuleReader.LoadPointer(module, left)
+      assignment.left = left_slice
+      left_slice.signal.AddAssignment(assignment)
+    elif isinstance(left, ast.Partselect):
+      # Signal slice with upper and lower bound.
+      name = VerilogIdentifier(left.var.name).raw
+      left_slice = ModuleReader.LoadPartselect(module, left)
+      assignment.left = left_slice
+      left_slice.signal.AddAssignment(assignment)
+    elif isinstance(left, ast.LConcat):
+      # LValue concatenation.
+      raise NotImplementedError(
+          f'left side of assignment is {type(left)}, {left=}')
+
+    if isinstance(right, ast.Identifier):
+      # Signal name, str.
+      name = VerilogIdentifier(right.name).raw
+      signal = module.GetOrCreateSignal(name)
+      assignment.right = signal
+      signal.AddAssignment(assignment)
+    elif isinstance(right, ast.Pointer):
+      # Signal with single index.
+      right_slice = ModuleReader.LoadPointer(module, right)
+      assignment.right = right_slice
+      right_slice.signal.AddAssignment(assignment)
+    elif isinstance(right, ast.Partselect):
+      # Signal slice with upper and lower bound.
+      name = VerilogIdentifier(right.var.name).raw
+      right_slice = ModuleReader.LoadPartselect(module, right)
+      assignment.right = right_slice
+      right_slice.signal.AddAssignment(assignment)
+    elif isinstance(right, ast.Concat):
+      # Concatenation.
+      raise NotImplementedError(
+          f'right side of assignment is {type(right)}, {right=}')
+
+    module.assignments[assignment.left] = assignment
 
   # TODO(growly): Remove Verilog-specific builders from Module, which should be
   # an abstract data container. Put them in VerilogReader or some such, with a
@@ -104,7 +190,8 @@ class ModuleReader:
     # ast.Decl declares an ast.Variable, only some of which are of interest.
     children = ast_decl.children()
     if len(children) > 1:
-      raise NotImplementedError("didn't expect there to be this many children on a Decl")
+      raise NotImplementedError(
+          'didn\'t expect there to be this many children on a Decl')
     child = children[0]
 
     name = VerilogIdentifier(child.name).raw
@@ -123,7 +210,8 @@ class ModuleReader:
         return
         
       assert(name not in module.signals)
-      width = 1 if not child.width else int(child.width.msb.value) - int(child.width.lsb.value) + 1
+      width = 1 if not child.width else int(
+          child.width.msb.value) - int(child.width.lsb.value) + 1
       signal = module.GetOrCreateSignal(name, width=width)
       return
     
@@ -136,10 +224,12 @@ class ModuleReader:
     elif isinstance(child, ast.Inout):
       direction = Port.Direction.INOUT
 
-    width = 1 if not child.width else int(child.width.msb.value) - int(child.width.lsb.value) + 1
+    width = 1 if not child.width else int(
+        child.width.msb.value) - int(child.width.lsb.value) + 1
     if name in module.ports:
       port = module.ports[name]
-      assert port.signal is not None, f'port {name} should have a signal by this point'
+      assert port.signal is not None, (
+          f'port {name} should have a signal by this point')
       # We accept that a decl can override the width and direction of a signal
       # since ports can be declared without widths or directions. If it does,
       # we have to fix up the old signal and reconnect everything that would
@@ -159,8 +249,8 @@ class ModuleReader:
       assert (direction == port.direction), (
           f'port {name} has direction {port.direction} != {direction}')
     elif direction != Port.Direction.NONE:
-      # This is not a known port, but it has a direction (i.e. the direction isn't NONE),
-      # so perhaps it should be a port.
+      # This is not a known port, but it has a direction (i.e. the direction
+      # isn't NONE), so perhaps it should be a port.
       _ = module.GetOrCreatePort(name, width=width, direction=direction)
       raise NotImplementedError('wow I can\'t believe this happened')
   
@@ -182,7 +272,15 @@ class ModuleReader:
         connection.instance = instance
         children = ast_portarg.children()
         if len(children) > 1:
-          raise NotImplementedError('can\'t deal with portargs that have many children')
+          raise NotImplementedError(
+              'can\'t deal with portargs that have many children')
+        # If the argname is None, the port is not connected to anything, it is
+        # just written. We can ignore it since we do not explicitly encode
+        # disconnections.
+        if len(children) == 0:
+          print(f'instance {instance.name} ({module_name}) port '
+                f'{ast_portarg.portname} is disconnected, skipping')
+          continue
         identifier = children[0]
         if isinstance(identifier, ast.Identifier):
           net_name = VerilogIdentifier(identifier.name).raw
@@ -190,14 +288,10 @@ class ModuleReader:
           connection.signal = signal
           signal.Connect(connection)
         elif isinstance(identifier, ast.Pointer):
-          net_name = VerilogIdentifier(identifier.var.name).raw
-          net_slice = Slice()
-          signal = module.signals[net_name]
-          net_slice.signal = signal
-          net_slice.top = int(identifier.ptr.value)
-          net_slice.bottom = int(identifier.ptr.value)
+          net_slice = ModuleReader.LoadPointer(module, identifier)
           net_slice.Connect(connection)
           connection.slice = net_slice
+
         instance.connections[port_name] = connection
       module.instances[instance.name] = instance
 

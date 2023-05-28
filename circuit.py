@@ -103,6 +103,10 @@ class Signal:
     # The ports which connect to this signal, if any.
     self.ports = set()
 
+    # Assignments which involve this signal, which we can use to find any other
+    # signals mapped to sub-indices (slices) of this one.
+    self.assignments = set()
+
     # Connections to wires in the signal are maintained by the Signal itself;
     # any slice of the Signal implicitly connects each of those wires. Therefore
     # slices can remain lightweight and be duplicated as a bookkeeping measure
@@ -116,6 +120,9 @@ class Signal:
   def __repr__(self):
     out = '[signal: {} w={}]'.format(self.name, self.width)
     return out
+
+  def AddAssignment(self, assignment):
+    self.assignments.add(assignment)
 
   def Connect(self, to, index=None):
     if index is None:
@@ -293,7 +300,8 @@ class Connection:
       raise NotImplementedError()
 
   def Disconnect(self):
-    assert self.port_name in self.instance.connections, f'{self.port_name} not in {self.instance.connections}'
+    assert self.port_name in self.instance.connections, (
+        f'{self.port_name} not in {self.instance.connections}')
     self.DisconnectFromSignal()
     del self.instance.connections[self.port_name]
 
@@ -363,6 +371,24 @@ class Slice:
 #  # Implemented so that equal slices have equal hashes:
 #  def __hash__(self, other):
 #    return hash((self.signal.name if self.signal else None, self.top, self.bottom))
+
+
+# An Assignment models the mapping of signals, slices or concatenations of
+# signals to another set of signals, slices or concatenations thereof.
+class Assignment:
+
+  def __init__(self):
+    # Each of left and right are one of {Signal, Slice, Concatenation}.
+    self.left = None
+    self.right = None
+
+  def __repr__(self):
+    return f'[assignment {self.left} = {self.right}]'
+
+  def EnumerateWires(self):
+    # Return the mappings of wires from the left to the right side, one wire
+    # at a time.
+    i = 0
 
 
 class Instance:
@@ -579,6 +605,9 @@ class Module(ExternalModule):
 
     self.instances = {}
 
+    # The left object in the assignment becomes the index.
+    self.assignments = {}
+
     # TODO(aryap): Need to know what ground and power nets are.
 
     # How many 10^x of an Ohm. (None => x = 0)
@@ -609,7 +638,8 @@ class Module(ExternalModule):
     for port_name, port in self.ports.items():
       print(f'\t\t{port_name}: {port}')
     print(f'\t{len(self.signals)} signals:')
-    print(f'\t{len(self.instances)} instacnes:')
+    print(f'\t{len(self.assignments)} assignments')
+    print(f'\t{len(self.instances)} instances:')
     for name, instance in self.instances.items():
       print(f'\t\t{name}: {instance.module_name}')
       for port_name, connection in instance.connections.items():
