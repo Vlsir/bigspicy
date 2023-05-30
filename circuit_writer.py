@@ -156,6 +156,22 @@ class CircuitWriter():
       CircuitWriter.ToConnection(
           port_name, connection, instance_pb.connections.add())
 
+  @staticmethod
+  def ToConnectionTarget(signal_slice_or_concat, target_pb):
+    if isinstance(signal_slice_or_concat, circuit.Signal):
+      signal = signal_slice_or_concat
+      target_pb.sig = signal.name
+    elif isinstance(signal_slice_or_concat, circuit.Slice):
+      CircuitWriter.ToSlice(signal_slice_or_concat, target_pb.slice)
+    else:
+      raise NotImplementedError('is this supposed to be a concat?')
+
+  @staticmethod
+  def ToAssignment(assignment, assignment_pb):
+    CircuitWriter.ToConnectionTarget(assignment.left, assignment_pb.left)
+    CircuitWriter.ToConnectionTarget(assignment.right, assignment_pb.right)
+
+  @staticmethod
   def ToModule(module, module_pb):
     module_pb.name = module.name
     for name, value in module.default_parameters.items():
@@ -167,6 +183,8 @@ class CircuitWriter():
       CircuitWriter.ToSignal(signal, module_pb.signals.add())
     for name, instance in module.instances.items():
       CircuitWriter.ToInstance(instance, module_pb.instances.add())
+    for _, assignment in module.assignments.items():
+      CircuitWriter.ToAssignment(assignment, module_pb.assignments.add())
 
   def ToCircuitProto(self):
     design = self.design

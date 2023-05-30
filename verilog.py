@@ -11,7 +11,7 @@ from pyverilog.vparser import parser as verilog_parser
 import pyverilog.vparser.ast as ast
 
 # Local Imports 
-from circuit import Module, VerilogIdentifier, Port, Instance, Connection, Slice, Assignment
+from circuit import Module, VerilogIdentifier, Port, Instance, Connection, Slice, Assignment, Concatenation
 
 
 class DesignReader:
@@ -51,9 +51,9 @@ class DesignReader:
       name = module.name
       if name in design.known_modules:
         raise Exception('duplicate definition of {}'.format(name))
-      design.known_modules[module.name] = module
+      design.known_modules[name] = module
       if name in design.unknown_references:
-        design.unknown_references.remove(name)
+        del design.unknown_references[name]
       # Maybe we referenced it already.
       for _, instance in module.instances.items():
         if instance.module_name not in design.known_modules:
@@ -119,59 +119,55 @@ class ModuleReader:
   def LoadAssign(module: Module, ast_assign: ast.Assign):
     # Expect ast_assign.left to be an ast.Lvalue object, and ast_assign.right to
     # be an ast.Rvalue object.
-    left = ast_assign.left.var
-    right = ast_assign.right.var
+    ast_left = ast_assign.left.var
+    ast_right = ast_assign.right.var
 
     # The left and right sides of the assignment are assignable objects, meaning
     # they need to track the assignments they participate in for when we
     # traverse the graph later.
 
-    assignment = Assignment()
+    left = None
+    right = None
 
-    if isinstance(left, ast.Identifier):
+    if isinstance(ast_left, ast.Identifier):
       # Signal name, str.
-      name = VerilogIdentifier(left.name).raw
+      name = VerilogIdentifier(ast_left.name).raw
       signal = module.GetOrCreateSignal(name)
-      assignment.left = signal
-      signal.AddAssignment(assignment)
-    elif isinstance(left, ast.Pointer):
+      left = signal
+    elif isinstance(ast_left, ast.Pointer):
       # Signal with single index.
-      left_slice = ModuleReader.LoadPointer(module, left)
-      assignment.left = left_slice
-      left_slice.signal.AddAssignment(assignment)
-    elif isinstance(left, ast.Partselect):
+      left_slice = ModuleReader.LoadPointer(module, ast_left)
+      left = left_slice
+    elif isinstance(ast_left, ast.Partselect):
       # Signal slice with upper and lower bound.
-      name = VerilogIdentifier(left.var.name).raw
-      left_slice = ModuleReader.LoadPartselect(module, left)
-      assignment.left = left_slice
-      left_slice.signal.AddAssignment(assignment)
-    elif isinstance(left, ast.LConcat):
+      name = VerilogIdentifier(ast_left.var.name).raw
+      left_slice = ModuleReader.LoadPartselect(module, ast_left)
+      left = left_slice
+    elif isinstance(ast_left, ast.LConcat):
       # LValue concatenation.
       raise NotImplementedError(
-          f'left side of assignment is {type(left)}, {left=}')
+          f'left side of assignment is {type(ast_left)}, {ast_left=}')
 
-    if isinstance(right, ast.Identifier):
+    if isinstance(ast_right, ast.Identifier):
       # Signal name, str.
-      name = VerilogIdentifier(right.name).raw
-      signal = module.GetOrCreateSignal(name)
-      assignment.right = signal
-      signal.AddAssignment(assignment)
-    elif isinstance(right, ast.Pointer):
+      name = VerilogIdentifier(ast_right.name).raw
+      right = module.GetOrCreateSignal(name)
+    elif isinstance(ast_right, ast.Pointer):
       # Signal with single index.
-      right_slice = ModuleReader.LoadPointer(module, right)
-      assignment.right = right_slice
-      right_slice.signal.AddAssignment(assignment)
-    elif isinstance(right, ast.Partselect):
+      right = ModuleReader.LoadPointer(module, ast_right)
+    elif isinstance(ast_right, ast.Partselect):
       # Signal slice with upper and lower bound.
-      name = VerilogIdentifier(right.var.name).raw
-      right_slice = ModuleReader.LoadPartselect(module, right)
-      assignment.right = right_slice
-      right_slice.signal.AddAssignment(assignment)
-    elif isinstance(right, ast.Concat):
+      name = VerilogIdentifier(ast_right.var.name).raw
+      right = ModuleReader.LoadPartselect(module, ast_right)
+    elif isinstance(ast_right, ast.Concat):
       # Concatenation.
       raise NotImplementedError(
-          f'right side of assignment is {type(right)}, {right=}')
+          f'right side of assignment is {type(ast_right)}, {ast_right=}')
 
+    assignment = Assignment(left, right)
+    left.AddAssignment(assignment)
+    right.AddAssignment(assignment)
+    print(f'mapping {left} <=> {right}')
     module.assignments[assignment.left] = assignment
 
   # TODO(growly): Remove Verilog-specific builders from Module, which should be
@@ -291,6 +287,27 @@ class ModuleReader:
           net_slice = ModuleReader.LoadPointer(module, identifier)
           net_slice.Connect(connection)
           connection.slice = net_slice
+        elif isinstance(identifier, ast.Concat):
+          parts = []
+          for child in identifier.list:
+            if isinstance(child, ast.Identifier):
+              net_name = VerilogIdentifier(child.name).raw
+              signal = module.GetOrCreateSignal(net_name)
+              parts.append(signal)
+            elif isinstance(child, ast.Pointer):
+              net_slice = ModuleReader.LoadPointer(module, child)
+              parts.append(net_slice)
+            elif isinstance(child, ast.Partselect):
+              net_slice = ModuleReader.LoadPartselect(module, child)
+              parts.append(net_slice)
+            else:
+              raise NotImplementedError(
+                  f'not sure how to deal with {type(child)} in concat parts')
+
+          # Important! Concatenations store parts in order of increasing bit
+          # significance:
+          concat = Concatenation(reversed(parts))
+          connection.concat = concat
 
         instance.connections[port_name] = connection
       module.instances[instance.name] = instance

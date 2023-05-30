@@ -53,6 +53,10 @@ from spice_util import NumericalValue, SIUnitPrefix
 # |                  |  Parameters  |   |
 # |                  +--------------+   |
 # +-------------------------------------+
+#
+# The netlist can be described in abstract with signals that have widths of 1 or
+# more (buses). We can refer to signals through slices or in concatenations,
+# which can contain slices or whole signals.
 
 CAPACITOR = None
 RESISTOR = None
@@ -107,6 +111,10 @@ class Signal:
     # signals mapped to sub-indices (slices) of this one.
     self.assignments = set()
 
+    # Maps a wire index to a set of other wires, which reference signals with
+    # indices.
+    self.mapped_wires = collections.defaultdict(set)
+
     # Connections to wires in the signal are maintained by the Signal itself;
     # any slice of the Signal implicitly connects each of those wires. Therefore
     # slices can remain lightweight and be duplicated as a bookkeeping measure
@@ -124,6 +132,11 @@ class Signal:
   def AddAssignment(self, assignment):
     self.assignments.add(assignment)
 
+    for k, (left, right) in enumerate(assignment.EnumerateWires()):
+      for wire in [left, right]:
+        if wire.signal is not self:
+          self.mapped_wires[k].add(wire)
+
   def Connect(self, to, index=None):
     if index is None:
       # If no index is given, connect to all indices.
@@ -132,9 +145,23 @@ class Signal:
       return
     self.connects[index].add(to)
 
+  def EquivalentWires(self, index):
+    return list(self.mapped_wires[index])
+
+  def EquivalentSignals(self, index):
+    return [w.signal for w in self.EquivalentWires(index)]
+
   def Connects(self, index=None):
     if index is not None:
-      return self.connects[index]
+      equiv_wires = self.EquivalentWires(index)
+      if not equiv_wires:
+        return self.connects[index]
+
+      connections = set()
+      connections.update(self.connects[index])
+      for wire in equiv_wires:
+        connections.update(wire.Connects())
+      return connections
 
     union = set()
     for k in range(self.width):
@@ -188,6 +215,9 @@ class Signal:
       #print(f'disconnecting {connected} from {index} on {self}')
       self.DisconnectEntity(index, connected)
 
+  def EnumerateWires(self):
+    return [Wire(self, k) for k in range(self.width)]
+
   def Width(self):
     return self.width
 
@@ -225,6 +255,82 @@ class Wire:
       return self.signal.name
     else:
       return f'{self.signal.name}.{self.index}'
+
+
+class Concatenation:
+  # A note about the order in which wires appear. Consider the verilog:
+  #   wire [3:0] bus = {some[0], some{2:1}, other}
+  #
+  # This should create a concat with MSB to LSB indices:
+  #  MSB
+  #   3  some[0]
+  #   2  some[2]
+  #   1  some[1]
+  #   0  other
+  #  LSB
+  #
+  # We expect the parts to be ordered in increasing bit significance, so in this
+  # case:
+  #  self.parts = [other (Signal), some (Slice, 1 - 2), some (Slice, 0 - 0)]
+
+  def __init__(self, parts):
+    # Parts are a Signal or Slice.
+    self.parts = list(parts)
+    self.parts_by_index = []
+    self.wires = []
+    self.width = 0
+
+    self._MapWires()
+
+  def __repr__(self):
+    # We have to reverse the parts list again because to remind readers of how
+    # the concatenations are represented in verilog syntax.
+    part_descriptions = ', '.join([f'{part}' for part in reversed(self.parts)])
+    return (
+        f'[concat: w={self.Width()} in '
+        f'{len(self.parts)} parts: {{{part_descriptions}}}]')
+
+  def _MapWires(self):
+    self.width = 0
+    for part in self.parts:
+      self.width += part.Width()
+
+      if isinstance(part, Signal):
+        signal = part
+        base = 0
+      elif isinstance(part, Slice):
+        signal = part.signal
+        base = part.bottom
+      else:
+        raise NotImplementedError(
+            f'Concatenation part of type {type(part)} is crazy')
+
+      for i in range(part.Width()):
+        part_index = base + i
+        self.parts_by_index.append(part)
+        self.wires.append(Wire(signal, part_index))
+
+  def Width(self):
+    return self.width
+
+  def Connect(self, to, index=None):
+    if index is None:
+      # TODO(aryap): just connect every part?
+      raise NotImplementedError(
+          'not sure how to connect a whole concat to something')
+
+    self.parts_by_index[i].Connect(to, index)
+
+  def Connects(self, index=None):
+    if index is None:
+      # TODO(aryap): just connect every part?
+      raise NotImplementedError(
+          'not sure how to do Connects on a whole concat to something')
+
+    return self.parts_by_index[i].Connects(index)
+
+  def EnumerateWires(self):
+    return self.wires
 
 
 class Connection:
@@ -273,7 +379,8 @@ class Connection:
       return (self.signal.width - 1, 0)
     if self.slice is not None:
       return (self.slice.top, self.slice.bottom)
-    raise NotImplementedError()
+    raise NotImplementedError(
+        f'not sure how to provide indexed signal for {self}')
 
   def DirectionOfInstancePort(self):
     if (type(self.instance.module) is ExternalModule and
@@ -343,15 +450,24 @@ class Slice:
       index = i + self.bottom
       self.signal.DisconnectIndex(index, entity=entity, include_ports=include_ports)
 
-  def Connects(self):
+  def Connects(self, index=None):
+    if index is not None:
+      return self.signal.Connects(index + self.bottom)
+
     connects = set()
     for i in range(self.top - self.bottom + 1):
       k = i + self.bottom
       connects.update(self.signal.connects[k])
     return connects
 
+  def EnumerateWires(self):
+    return [Wire(self.signal, k + self.bottom) for k in range(self.Width())]
+
   def Width(self):
     return self.top - self.bottom + 1
+
+  def AddAssignment(self, assignment):
+    self.signal.AddAssignment(assignment)
 
 #  # NOTE(growly): Not sure if this is working:
 #  def __eq__(self, other):
@@ -377,10 +493,16 @@ class Slice:
 # signals to another set of signals, slices or concatenations thereof.
 class Assignment:
 
-  def __init__(self):
+  def __init__(self, left, right):
     # Each of left and right are one of {Signal, Slice, Concatenation}.
-    self.left = None
-    self.right = None
+    self.left = left
+    self.right = right
+
+    assert left.Width() == right.Width()
+
+    if isinstance(self.left, Concatenation) or isinstance(
+        self.right, Concatenation):
+      raise NotImplementedError()
 
   def __repr__(self):
     return f'[assignment {self.left} = {self.right}]'
@@ -388,7 +510,9 @@ class Assignment:
   def EnumerateWires(self):
     # Return the mappings of wires from the left to the right side, one wire
     # at a time.
-    i = 0
+    left_wires = self.left.EnumerateWires()
+    right_wires = self.right.EnumerateWires()
+    return zip(left_wires, right_wires)
 
 
 class Instance:
@@ -650,8 +774,9 @@ class Module(ExternalModule):
   # (latches, flops). Ports are not sequential per se, but since we don't know
   # what they connect to we have to consider them our boundary.
   def FindCriticalPaths(self):
-    pass
+    raise NotImplementedError()
 
+  # TODO(aryap): Remove this.
   def FindPaths(self):
 
     def IsTerminalNode(node):
@@ -742,13 +867,24 @@ class Module(ExternalModule):
 
   # TODO(growly): Stop search at GND and VSS!
 
+  # FIXME(growly):
+  # - FindConnectedRegionBetweenPorts and ExtractPassiveRegions should traverse
+  # Wires, not Signals, since they inherently assume that the signals are width
+  # 1 and that's not always true. That would also make traversing signal
+  # mappings (assignments) easier.
+  # - Independently, it would be good to reduce the complex model of the netlist
+  # into simply wires that have single unique names and unit widths. That would
+  # make traversal much easier.
+
   @staticmethod
   def FindConnectedRegionBetweenPorts(
       source_port, sink_port, source_range=None, sink_range=None,
       ignore_signals=set()):
     # We traverse a graph of:
     #             +--------+                +----------+                +--------+
-    #             | Signal |                | Instance |                | Signal |
+    #             | Signal |                |          |                | Signal |
+    #             | Slice  |                | Instance |                | Slice  |
+    #             | Concat |                |          |                | Concat |
     #             +--------+                +----------+                +--------+
     #            /          \              /            \              /
     # +---------+            +------------+              +------------+ 
@@ -771,7 +907,7 @@ class Module(ExternalModule):
 
     for i in range(source_high - source_low + 1):
       k = i + source_low
-      to_visit.extend([x for x in source_port.signal.connects[k] if x != source_port])
+      to_visit.extend([x for x in source_port.signal.Connects(k) if x != source_port])
 
     some_sink_found = False
 
