@@ -51,6 +51,8 @@ class DesignReader:
       name = module.name
       if name in design.known_modules:
         raise Exception('duplicate definition of {}'.format(name))
+        #print(f'warning! {name} is defined multiple times, and all but one '
+        #      'definitions will be ignored!')
       design.known_modules[name] = module
       if name in design.unknown_references:
         del design.unknown_references[name]

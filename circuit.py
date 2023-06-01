@@ -153,13 +153,13 @@ class Signal:
 
   def Connects(self, index=None):
     if index is not None:
-      equiv_wires = self.EquivalentWires(index)
-      if not equiv_wires:
+      equivalent_wires = self.EquivalentWires(index)
+      if not equivalent_wires:
         return self.connects[index]
 
       connections = set()
       connections.update(self.connects[index])
-      for wire in equiv_wires:
+      for wire in equivalent_wires:
         connections.update(wire.Connects())
       return connections
 
@@ -367,6 +367,9 @@ class Connection:
     return self.signal is None and self.slice is None and self.concat is None
 
   def EnumerateWires(self):
+    if self.concat is not None:
+      return self.concat.EnumerateWires()
+
     signal = self.GetConnectedSignal()
     indices = self.IndexOnSignal()
     return [Wire(signal, k + indices[0])
@@ -398,13 +401,15 @@ class Connection:
       return self.concat
     return None
 
-  def GetConnectedSignal(self):
+  def GetConnectedSignal(self, index=None):
     if self.signal is not None:
       return self.signal
     if self.slice is not None:
       return self.slice.signal
+    if index is None:
+      raise KeyError(f'Need to know which wire to get signal for, {index=}')
     if self.concat is not None:
-      raise NotImplementedError()
+      return self.concat.wires[index].signal
 
   def Disconnect(self):
     assert self.port_name in self.instance.connections, (
@@ -502,7 +507,7 @@ class Assignment:
 
     if isinstance(self.left, Concatenation) or isinstance(
         self.right, Concatenation):
-      raise NotImplementedError()
+      raise NotImplementedError('Haven\'t looked at LConcats yet')
 
   def __repr__(self):
     return f'[assignment {self.left} = {self.right}]'
@@ -892,7 +897,12 @@ class Module(ExternalModule):
     # +---------+            +------------+              +------------+
     #
     # and return the collection of these items that form a combinational path
-    # between
+    # between.
+    #
+    # In the graph traversal, only Port and Connection objects are vertices.
+    # Connections' Instances are used to seed the search space. Signals, Slices
+    # and Concats are used to navigate which Connections and Ports are connected
+    # to each other.
     if not isinstance(source_port, Port):
       # This doesn't have to be limited to a Port, but for now that's all we need.
       raise NotImplementedError()
