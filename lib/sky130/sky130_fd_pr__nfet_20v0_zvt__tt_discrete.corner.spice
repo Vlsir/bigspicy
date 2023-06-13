@@ -1,0 +1,36 @@
+** Translated using xdm 2.6.0 on Nov_14_2022_16_05_33_PM
+** from /tmp/_MEItbfi7Y/hspice.xml
+** to /tmp/_MEItbfi7Y/xyce.xml
+
+* Copyright 2020 The SkyWater PDK Authors
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     https://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+* SKY130 Spice File.
+
+*
+* model corner
+* , Bin 000, W = 30.0, L = 1.0
+* ----------------------------
+.PARAM 
++ SKY130_FD_PR__NFET_20V0_ZVT__RDRIFT_MULT=1.0 SKY130_FD_PR__NFET_20V0_ZVT__HVVSAT_MULT=1.0 
++ SKY130_FD_PR__NFET_20V0_ZVT__VTH0_DIFF=0.0 SKY130_FD_PR__NFET_20V0_ZVT__K2_DIFF=0.0 
++ SKY130_FD_PR__NFET_20V0_ZVT__LINT_DIFF=0.0 SKY130_FD_PR__NFET_20V0_ZVT__U0_DIFF=0.0 
++ SKY130_FD_PR__NFET_20V0_ZVT__AGIDL_DIFF=0.0 SKY130_FD_PR__NFET_20V0_ZVT__VSAT_DIFF=0.0 
++ SKY130_FD_PR__NFET_20V0_ZVT__AGS_DIFF=0.0 SKY130_FD_PR__NFET_20V0_ZVT__KETA_DIFF=0.0 
++ N20ZVTVH1DEFET_JS_MULT_PMC=1.0
+.INCLUDE sky130_fd_pr__nfet_20v0_zvt__subcircuit.pm3.spice
+
+
+
+
+

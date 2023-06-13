@@ -1,0 +1,99 @@
+** Translated using xdm 2.6.0 on Nov_14_2022_16_05_10_PM
+** from /tmp/_MEItbfi7Y/hspice.xml
+** to /tmp/_MEItbfi7Y/xyce.xml
+
+* Copyright 2020 The SkyWater PDK Authors
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     https://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+* SKY130 Spice File.
+
+* statistics {
+*   mismatch {
+*   }
+* }
+* 4-terminal Vertical Parallel Plate Capacitor /w LI-M4 fingers and M5 Shield
+.SUBCKT sky130_fd_pr__cap_vpp_44p7x23p1_pol1m1m2m3m4m5_noshield c0 c1 b 
++ PARAMS: MF=1
+.PARAM 
++ CTOT_A='1.47e-12*sky130_fd_pr__cap_vpp_11p5x11p7_pol1m1m2m3m4m5_noshield_base__cor' 
++ C0_SUB='5.17e-14*cli2s_vpp' C1_SUB='4.86e-14*cli2s_vpp' RAT_M5=0.026 RAT_M4=0.1 
++ RAT_M3=0.1 RAT_M2=0.259 RAT_M1=0.259 RAT_LI=0.18 RAT_PY=0.076 CAP_M5='rat_m5*ctot_a' 
++ CAP_M4='rat_m4*ctot_a' CAP_M3='rat_m3*ctot_a' CAP_M2='rat_m2*ctot_a' CAP_M1='rat_m1*ctot_a' 
++ CAP_LI='rat_li*ctot_a' CAP_PY='rat_py*ctot_a' LPY='23.05-2*0.33-0.21' LL1='23.05-2*0.33-0.21' 
++ LM1='23.05-2*0.33-0.21' LM2='23.05-2*0.33-0.21' LM3='23.05-2*0.33-0.21' LM4='23.05-2*0.33-0.21' 
++ LM5='23.05-3*1.6' WPY=0.150 WL1=0.140 WM1=0.140 WM2=0.140 WM3=0.300 WM4=0.300 WM5=1.60 
++ NFPY='32.28*4' NFL1='41.25*4' NFM1='41.25*4' NFM2='41.25*4' NFM3='19.52*4' NFM4='19.52*4' 
++ NFM5='4.07*4' NVIA4=2.0 NVIA3='28*4' NVIA2='10*4' NVIA='20*4' NCON='31*4' NLICON='33*4'
+Rsm5 z0 z2 R='rm5*lm5/wm5*(1/3)*(1/nfm5)'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Cm5 z2 z1 C='cap_m5'
+Rvia4_0 z0 a0 R='rcvia4/nvia4'
+Rvia4_1 z1 a1 R='rcvia4/nvia4'
+Rsm4 a0 a2 R='rm4*lm4/wm4*(1/3)*(1/nfm4)'
+Cm4 a2 a1 C='cap_m4'
+Rvia3_0 a0 b0 R='rcvia3/nvia3'
+Rvia3_1 a1 b1 R='rcvia3/nvia3'
+Rsm3 b0 b2 R='rm3*lm3/wm3*(1/3)*(1/nfm3)'
+Cm3 b2 b1 C='cap_m3'
+Rvia2_0 b0 c0 R='rcvia2/nvia2'
+Rvia2_1 b1 c1 R='rcvia2/nvia2'
+Rsm2 c0 c2 R='(rm2*lm2/wm2*(1/3)*(1/nfm2)+rm2*lm2/wm2)'
+Cm2 c2 c1 C='cap_m2'
+Rvia_0 c0 d0 R='rcvia/nvia'
+Rvia_1 c1 d1 R='rcvia/nvia'
+Rsm1 d0 d2 R='rm1*lm1/wm1*(1/3)*(1/nfm1)'
+Cm1 d2 d1 C='cap_m1'
+Rcon1 d0 e0 R='rcl1/ncon'
+Rcon2 d1 e1 R='rcl1/ncon'
+Rli1 e0 e2 R='rl1*ll1/wl1*(1/3)*(1/nfl1)'
+Cli e2 e1 C='cap_li'
+Rlicon1 e0 f0 R='rcp1/nlicon'
+Rlicon2 e1 f1 R='rcp1/nlicon'
+Rpy1 f0 f2 R='rp1*lpy/wpy*(1/3)*(1/nfpy)'
+Cpy f2 f1 C='cap_py'
+Cpy2b_0 f0 b C='c0_sub'
+Cpy2b_1 f1 b C='c1_sub'
+.ENDS sky130_fd_pr__cap_vpp_44p7x23p1_pol1m1m2m3m4m5_noshield

@@ -1,0 +1,343 @@
+** Translated using xdm 2.6.0 on Nov_14_2022_16_05_26_PM
+** from /tmp/_MEItbfi7Y/hspice.xml
+** to /tmp/_MEItbfi7Y/xyce.xml
+
+* Copyright 2020 The SkyWater PDK Authors
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     https://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+* SKY130 Spice File.
+
+.INCLUDE sky130_fd_pr__model__parasitic__diode_pw2dn__extended_drain.model.spice
+.INCLUDE sky130_fd_pr__diode_pw2nd_05v5__extended_drain.model.spice
+.SUBCKT sky130_fd_pr__nfet_20v0 d g s b 
++ PARAMS: W=60u L=2u M=1 T=30 AD=0 AS=0 PD=0 PS=0 NRD=2 NRS=2 MF=1 SA=0 SB=0
+.PARAM 
++ RDRIFT_TNOM=1.934600e+004 VGDEP_TNOM=6.000000e-002 VTH_TNOM=7.000000e-001 VBDEP_TNOM=-1.224000 
++ VTH2=+1.048000e-001 HVVSAT_TNOM=3.893600 AVSAT_TNOM=9.407600e-001 DELTAW=9.000000e-001 
++ HVNEL_N20VHV1=2.95 HVVBDEP=-2.490600e-002
+.PARAM 
++ SKY130_FD_PR__NFET_20V0__VGDEP_MULT=1 N20VHV1RES_VTH0_DIFF=0.0 SKY130_FD_PR__NFET_20V0__VBDEP_MULT=1 
++ SKY130_FD_PR__NFET_20V0__AVSAT_MULT=1
+.PARAM 
++ SKY130_FD_PR__NFET_20V0__PGATEJUNCTION_MULT=4.6689e-1 SKY130_FD_PR__NFET_20V0__MJSWGATEJUNCTION_MULT=1.0 
++ SKY130_FD_PR__NFET_20V0__PBSWGATEJUNCTION_MULT=1.0
+.PARAM 
++ W_N20VHV1=29.41 NRD_N20VHV1=2.0 NRS_N20VHV1=2.0 AD_N20VHV1='294.5*0.5' AS_N20VHV1=8.7 
++ PD_N20VHV1='91.5*0.5' PS_N20VHV1=60.58 DELVTO_N20VHV1=0.0
+.PARAM TC1_RDRIFT=0.00671814786081909
+
+
+
+
+
+
+
+.PARAM TC1_VGDEP=0.00067352380952381
+.PARAM TC1_VTH=0.00573669467787115
+.PARAM TC1_VBDEP=-0.000337318979879533
+.PARAM TC1_HVVSAT=0.0070429485950945
+.PARAM TC1_AVSAT=0.00120508503584265
+.PARAM TC2_RDRIFT=1.77312980397369E-05
+.PARAM TC2_VGDEP=7.92380952380953E-06
+.PARAM TC2_VTH=-0.000036750700280112
+.PARAM TC2_VBDEP=-1.67576573112905E-05
+.PARAM TC2_HVVSAT=-6.16729946550226E-06
+.PARAM TC2_AVSAT=-1.16883863966948E-05
+.PARAM 
++ RDRIFT='rdrift_tnom*((w_n20vhv1-deltaw)/w_n20vhv1)*(1+tc1_rdrift*(temp-30)+tc2_rdrift*(temp-30)*(temp-30))*sky130_fd_pr__nfet_20v0__rdrift_mult' 
++ VGDEP='vgdep_tnom*(1+tc1_vgdep*(temp-30)+tc2_vgdep*(temp-30)*(temp-30))*sky130_fd_pr__nfet_20v0__vgdep_mult' 
++ VTH='vth_tnom*(1+tc1_vth*(temp-30)+tc2_vth*(temp-30)*(temp-30))+n20vhv1res_vth0_diff' 
++ VBDEP='vbdep_tnom*(1+tc1_vbdep*(temp-30)+tc2_vbdep*(temp-30)*(temp-30))*sky130_fd_pr__nfet_20v0__vbdep_mult' 
++ HVVSAT='hvvsat_tnom*(1+tc1_hvvsat*(temp-30)+tc2_hvvsat*(temp-30)*(temp-30))*sky130_fd_pr__nfet_20v0__hvvsat_mult' 
++ AVSAT='avsat_tnom*(1+tc1_avsat*(temp-30)+tc2_avsat*(temp-30)*(temp-30))*sky130_fd_pr__nfet_20v0__avsat_mult'
+M1 d1 g s b sky130_fd_pr__nfet_20v0__base 
++ M={m} AD=0 AS=0 L={hvnel_n20vhv1} NRD={nrd_n20vhv1} NRS={nrs_n20vhv1} PD=0 PS=0 
++ W={w_n20vhv1}
+* rldd d d1 r='abs((1/w_n20vhv1)*(rdrift/(1+vgdep*(v(g,s)-vth-vbdep*v(b,s))))*(1+pwr((abs(v(d,s)+vth2-min(v(d1,s),60))/(hvvsat*(1+hvvbdep*v(b,s)))),avsat)))' tc1 = 0 tc2 = 0 m = {m}; HSpice Parser Retained (as a comment). Continuing.
+DNDrain1 b d sky130_fd_pr__model__parasitic__diode_ps2dn__extended_drain 
++ AREA='0.5*ad_n20vhv1'
+DNDrain2 b d1 sky130_fd_pr__model__parasitic__diode_ps2dn__extended_drain 
++ AREA='0.5*ad_n20vhv1'
+DNSrc b s sky130_fd_pr__diode_pw2nd_05v5__extended_drain AREA='as_n20vhv1'
+* DC IV MOS Parameters
+* BSIM4 - Model Selectors
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+* BSIM4 - Process Parameters
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+* Threshold Voltage Parameters
+
+
+
+
+
+
+
+* NEW BSIM4 Parameters for Level 54
+
+
+
+
+
+
+
+
+
+
+
+
+* Mobility Parameters
+
+
+
+
+
+
+* BSIM4 - Mobility Parameters
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+* Subthreshold Current Parameters
+
+
+
+
+
+
+* BSIM4 - Sub-threshold parameters
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+* Rout Parameters
+
+
+* BSIM4 - Rout Parameters
+
+
+
+
+
+
+
+
+
+
+
+
+* BSIM4 - Gate Induced Drain Leakage Model Parameters
+
+
+
+
+* BSIM4 - Gate Leakage Current Parameters
+
+
+
+
+* Temperature Effects Parameters
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+* BSIM4 - High Speed RF Model Parameters
+
+
+
+
+
+
+
+
+
+* BSIM4 - Flicker and Thermal Noise Parameters
+
+
+
+
+
+
+
+
+* BSIM4 - Layout Dependent Parasitic Model Parameters
+
+
+
+
+
+
+
+
+* Diode DC IV Parameters
+
+
+
+
+
+
+* BSIM4 - Diode DC IV parameters
+* Diode and FET Capacitance Parameters
+
+
+
+
+
+
+
+
+
+* BSIM4 - FET and Diode capacitance parameters
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+* Stress Parameters
+
+
+
+
+
+
+
+
+
+
+.ENDS sky130_fd_pr__nfet_20v0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*.END

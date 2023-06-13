@@ -1,0 +1,35 @@
+** Translated using xdm 2.6.0 on Nov_14_2022_16_05_13_PM
+** from /tmp/_MEItbfi7Y/hspice.xml
+** to /tmp/_MEItbfi7Y/xyce.xml
+
+* Copyright 2020 The SkyWater PDK Authors
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     https://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+* SKY130 Spice File.
+
+.PARAM SKY130_FD_PR__RF_PFET_01V8__TOXE_SLOPE=1.267e-02
+.PARAM SKY130_FD_PR__RF_PFET_01V8__TOXE1_SLOPE=1.067e-02
+.PARAM SKY130_FD_PR__RF_PFET_01V8__TOXE2_SLOPE=1.167e-02
+.PARAM SKY130_FD_PR__RF_PFET_01V8__TOXE3_SLOPE=1.367e-02
+.PARAM SKY130_FD_PR__RF_PFET_01V8__TOXE4_SLOPE=1.467e-02
+.PARAM SKY130_FD_PR__RF_PFET_01V8__TOXE5_SLOPE=1.567e-02
+.PARAM SKY130_FD_PR__RF_PFET_01V8__NFACTOR_SLOPE=0.429
+.PARAM SKY130_FD_PR__RF_PFET_01V8__NFACTOR1_SLOPE=0.0
+.PARAM SKY130_FD_PR__RF_PFET_01V8__B_TOXE_SLOPE=6.443e-03
+.PARAM SKY130_FD_PR__RF_PFET_01V8__B_TOXE_SLOPE1=4.443e-03
+.PARAM SKY130_FD_PR__RF_PFET_01V8__B_NFACTOR_SLOPE1=0.1
+.PARAM SKY130_FD_PR__RF_PFET_01V8__B_VOFF_SLOPE=0.014
+.PARAM SKY130_FD_PR__RF_PFET_01V8__B_VOFF_SLOPE1=0.009
+.PARAM SKY130_FD_PR__RF_PFET_01V8__B_VTH0_SLOPE1=7.356e-03
+.PARAM SKY130_FD_PR__RF_PFET_01V8__B_VTH0_SLOPE2=9.356e-03
+.PARAM SKY130_FD_PR__RF_PFET_01V8__B_VTH0_SLOPE3=8.356e-03

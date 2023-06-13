@@ -1,0 +1,16 @@
+** Translated using xdm 2.6.0 on Nov_14_2022_16_05_33_PM
+** from /tmp/_MEItbfi7Y/hspice.xml
+** to /tmp/_MEItbfi7Y/xyce.xml
+
+* SKY130 Spice File.
+* RF MOS Parameters
+.INCLUDE sky130_fd_pr__rf_nfet_01v8_b__tt.corner.spice
+.INCLUDE sky130_fd_pr__rf_nfet_01v8_lvt_b__tt.corner.spice
+.INCLUDE sky130_fd_pr__rf_nfet_g5v0d10v5_b__tt.corner.spice
+.INCLUDE sky130_fd_pr__rf_pfet_01v8_b__tt.corner.spice
+.INCLUDE sky130_fd_pr__rf_nfet_01v8__mismatch.corner.spice
+.INCLUDE sky130_fd_pr__rf_nfet_01v8_lvt__mismatch.corner.spice
+.INCLUDE sky130_fd_pr__rf_nfet_g5v0d10v5__mismatch.corner.spice
+.INCLUDE sky130_fd_pr__rf_pfet_01v8__mismatch.corner.spice
+.INCLUDE sky130_fd_pr__rf_pfet_01v8_mvt__tt_discrete.corner.spice
+.INCLUDE sky130_fd_pr__rf_pfet_01v8_mvt__mismatch.corner.spice

@@ -1,0 +1,83 @@
+** Translated using xdm 2.6.0 on Nov_14_2022_16_05_06_PM
+** from /tmp/_MEItbfi7Y/hspice.xml
+** to /tmp/_MEItbfi7Y/xyce.xml
+
+* SKY130 Spice File.
+.INCLUDE lod.spice
+
+.PARAM 
++ LV_DLC_ROTWEAK=.00e-9 LVHVT_DLC_ROTWEAK=.00e-9 LVT_DLC_ROTWEAK=.00e-9 HV_DLC_ROTWEAK=.00e-9 
++ SKY130_FD_PR__NFET_01V8__DLC_ROTWEAK={lv_dlc_rotweak} SKY130_FD_PR__ESD_NFET_01V8__DLC_ROTWEAK={lv_dlc_rotweak} 
++ SKY130_FD_PR__NFET_01V8_LVT__DLC_ROTWEAK={lvt_dlc_rotweak} SKY130_FD_PR__PFET_01V8__DLC_ROTWEAK={lv_dlc_rotweak} 
++ SKY130_FD_PR__PFET_01V8_LVT__DLC_ROTWEAK={lvt_dlc_rotweak} SKY130_FD_PR__PFET_01V8_HVT__DLC_ROTWEAK={lvhvt_dlc_rotweak} 
++ SKY130_FD_PR__ESD_NFET_G5V0D10V5__DLC_ROTWEAK={hv_dlc_rotweak} SKY130_FD_PR__ESD_PFET_G5V0D10V5__DLC_ROTWEAK={hv_dlc_rotweak} 
++ SKY130_FD_PR__NFET_03V3_NVT__DLC_ROTWEAK={hv_dlc_rotweak} SKY130_FD_PR__NFET_05V0_NVT__DLC_ROTWEAK={hv_dlc_rotweak} 
++ SKY130_FD_PR__NFET_G5V0D10V5__DLC_ROTWEAK={hv_dlc_rotweak} SKY130_FD_PR__PFET_G5V0D10V5__DLC_ROTWEAK={hv_dlc_rotweak} 
++ SKY130_FD_PR__PFET_G5V0D16V0__DLC_ROTWEAK={hv_dlc_rotweak} SKY130_FD_PR__SPECIAL_NFET_PASS__DLC_ROTWEAK={lv_dlc_rotweak} 
++ SKY130_FD_PR__SPECIAL_NFET_PASS_LOWLEAKAGE__DLC_ROTWEAK={lv_dlc_rotweak} SKY130_FD_PR__SPECIAL_NFET_PASS_FLASH__DLC_ROTWEAK={hv_dlc_rotweak} 
++ SKY130_FD_PR__SPECIAL_NFET_LATCH__DLC_ROTWEAK={lv_dlc_rotweak} SKY130_FD_PR__SPECIAL_NFET_LATCH_LOWLEAKAGE__DLC_ROTWEAK={lv_dlc_rotweak} 
++ SKY130_FD_PR__SPECIAL_PFET_PASS__DLC_ROTWEAK={lv_dlc_rotweak} SKY130_FD_PR__SPECIAL_PFET_PASS_LOWLEAKAGE__DLC_ROTWEAK={lv_dlc_rotweak} 
++ SKY130_FD_BS_FLASH__SPECIAL_SONOSFET_STAR__DLC_ROTWEAK={hv_dlc_rotweak} SKY130_FD_BS_FLASH__SPECIAL_SONOSFET_ORIGINAL__DLC_ROTWEAK={hv_dlc_rotweak} 
++ SONOS_EEOL_DLC_ROTWEAK={hv_dlc_rotweak} SONOS_PEOL_DLC_ROTWEAK={hv_dlc_rotweak}
+* include all individual diode models
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.INCLUDE sky130_fd_pr__model__parasitic__diode_ps2nw.model.spice
+.INCLUDE sky130_fd_pr__diode_pw2nd_05v5.model.spice
+.INCLUDE sky130_fd_pr__diode_pd2nw_05v5.model.spice
+.INCLUDE sky130_fd_pr__diode_pd2nw_05v5_hvt.model.spice
+.INCLUDE sky130_fd_pr__diode_pw2nd_11v0.model.spice
+.INCLUDE sky130_fd_pr__diode_pd2nw_11v0.model.spice
+.INCLUDE sky130_fd_pr__diode_pw2nd_05v5_nvt.model.spice
+.INCLUDE sky130_fd_pr__diode_pw2nd_05v5_lvt.model.spice
+.INCLUDE sky130_fd_pr__diode_pd2nw_05v5_lvt.model.spice
+.INCLUDE sky130_fd_pr__model__parasitic__diode_pw2dn.model.spice
+.INCLUDE sky130_fd_pr__model__parasitic__diode_ps2dn.model.spice
+.INCLUDE sky130_fd_pr__pfet_g5v0d16v0__parasitic__diode_pw2dn.model.spice
+* call models applicable to any corner
+.INCLUDE sky130_fd_pr__pnp_05v5_W3p40L3p40.model.spice
+.INCLUDE sky130_fd_pr__npn_05v5_W1p00L1p00.model.spice
+.INCLUDE sky130_fd_pr__npn_05v5_W1p00L2p00.model.spice
+.INCLUDE sky130_fd_pr__pnp_05v5_W0p68L0p68.model.spice
+.INCLUDE sky130_fd_pr__pfet_g5v0d16v0.pm3.spice
+.INCLUDE sky130_fd_pr__pfet_g5v0d16v0__subcircuit.pm3.spice
+.INCLUDE sky130_fd_pr__cap_var_hvt.model.spice
+.INCLUDE sky130_fd_pr__cap_var_lvt.model.spice
+.INCLUDE sky130_fd_pr__res_iso_pw.model.spice
+.INCLUDE sky130_fd_pr__cap_vpp_08p6x07p8_l1m1m2_noshield_o1.model.spice
+.INCLUDE sky130_fd_pr__model__cap_mim.model.spice
+.INCLUDE sky130_fd_pr__model__cap_vpp_only_mos.model.spice
+.INCLUDE mm.spice
+.INCLUDE mm.spice
+*.include "hspice.par"
+.INCLUDE head.spice
+.INCLUDE sky130_fd_pr__special_nfet_pass.pm3.spice
+.INCLUDE sky130_fd_pr__special_nfet_latch.pm3.spice
+.INCLUDE sky130_fd_pr__special_pfet_pass.pm3.spice
+.INCLUDE sky130_fd_pr__special_nfet_pass_flash.pm3.spice
+.INCLUDE sky130_fd_pr__model__cap_vpp_only_pq.model.spice
+.INCLUDE sky130_fd_pr__model__cap_vpp_only_p.model.spice
+.INCLUDE sky130_fd_pr__model__linear.model.spice
+.PARAM SKY130_FD_PR__RF_NFET_01V8_LVT__BASE__DLC_ROTWEAK=0
+.PARAM SKY130_FD_PR__PFET_01V8_LVT__RF_BASE_DLC_ROTWEAK=0
+.PARAM SKY130_FD_PR__RF_NFET_01V8__BASE__DLC_ROTWEAK=0
+.PARAM SKY130_FD_PR__RF_PFET_01V8__BASE__DLC_ROTWEAK=0
+.PARAM SKY130_FD_PR__RF_NFET_G5V0D10V5__BASE__DLC_ROTWEAK=0
+.INCLUDE sky130_fd_pr__rf_nfet_g5v0d10v5.pm3.spice
+.INCLUDE sky130_fd_pr__rf_nfet_01v8_lvt.pm3.spice
+.INCLUDE sky130_fd_pr__rf_nfet_01v8.pm3.spice
+.INCLUDE sky130_fd_pr__rf_pfet_01v8.pm3.spice
+.INCLUDE sky130_fd_pr__rf_pfet_01v8_mvt.pm3.spice

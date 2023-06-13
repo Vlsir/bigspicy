@@ -1,0 +1,267 @@
+** Translated using xdm 2.6.0 on Nov_14_2022_16_05_02_PM
+** from /tmp/_MEItbfi7Y/hspice.xml
+** to /tmp/_MEItbfi7Y/xyce.xml
+
+
+
+** Copyright 2020 The SkyWater PDK Authors
+
+.OPTIONS DEVICE TEMP=25 TNOM=25  ; converted options using xdm
+.OPTIONS PARSER SCALE=1.0u  ; converted options using xdm
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     https://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+******* SkyWater sky130 model library *********
+* Typical corner (tt)
+.LIB tt
+.PARAM MC_MM_SWITCH=0
+.PARAM MC_PR_SWITCH=0
+* MOSFET
+.INCLUDE tt.spice
+* Resistor/Capacitor
+* .include "r+c/res_typical__cap_typical.spice"; HSpice Parser Retained (as a comment). Continuing.
+* .include "r+c/res_typical__cap_typical__lin.spice"; HSpice Parser Retained (as a comment). Continuing.
+* Special cells
+.INCLUDE specialized_cells.spice
+.ENDL tt
+* Slow-Fast corner (sf)
+.LIB sf
+.PARAM MC_MM_SWITCH=0
+.PARAM MC_PR_SWITCH=0
+* MOSFET
+.INCLUDE sf.spice
+* Resistor/Capacitor
+* .include "r+c/res_typical__cap_typical.spice"; HSpice Parser Retained (as a comment). Continuing.
+* .include "r+c/res_typical__cap_typical__lin.spice"; HSpice Parser Retained (as a comment). Continuing.
+* Special cells
+.INCLUDE specialized_cells.spice
+.ENDL sf
+* Fast-Fast corner (ff)
+
+.LIB ff
+.PARAM MC_MM_SWITCH=0
+.PARAM MC_PR_SWITCH=0
+* MOSFET
+.INCLUDE ff.spice
+* Resistor/Capacitor
+* .include "r+c/res_typical__cap_typical.spice"; HSpice Parser Retained (as a comment). Continuing.
+* .include "r+c/res_typical__cap_typical__lin.spice"; HSpice Parser Retained (as a comment). Continuing.
+* Special cells
+.INCLUDE specialized_cells.spice
+.ENDL ff
+* Slow-Slow corner (ss)
+
+.LIB ss
+.PARAM MC_MM_SWITCH=0
+.PARAM MC_PR_SWITCH=0
+* MOSFET
+.INCLUDE ss.spice
+* Resistor/Capacitor
+* .include "r+c/res_typical__cap_typical.spice"; HSpice Parser Retained (as a comment). Continuing.
+* .include "r+c/res_typical__cap_typical__lin.spice"; HSpice Parser Retained (as a comment). Continuing.
+* Special cells
+.INCLUDE specialized_cells.spice
+.ENDL ss
+* Fast-Slow corner (fs)
+
+.LIB fs
+.PARAM MC_MM_SWITCH=0
+.PARAM MC_PR_SWITCH=0
+* MOSFET
+.INCLUDE fs.spice
+* Resistor/Capacitor
+* .include "r+c/res_typical__cap_typical.spice"; HSpice Parser Retained (as a comment). Continuing.
+* .include "r+c/res_typical__cap_typical__lin.spice"; HSpice Parser Retained (as a comment). Continuing.
+* Special cells
+.INCLUDE specialized_cells.spice
+.ENDL fs
+* Low-Low corner (ll)
+
+.LIB ll
+.PARAM MC_MM_SWITCH=0
+.PARAM MC_PR_SWITCH=0
+* MOSFET
+.INCLUDE tt.spice
+* Resistor/Capacitor
+* .include "r+c/res_low__cap_low.spice"; HSpice Parser Retained (as a comment). Continuing.
+* .include "r+c/res_low__cap_low__lin.spice"; HSpice Parser Retained (as a comment). Continuing.
+* Special cells
+.INCLUDE specialized_cells.spice
+.ENDL ll
+* High-High corner (hh)
+
+.LIB hh
+.PARAM MC_MM_SWITCH=0
+.PARAM MC_PR_SWITCH=0
+* MOSFET
+.INCLUDE tt.spice
+* Resistor/Capacitor
+* .include "r+c/res_high__cap_high.spice"; HSpice Parser Retained (as a comment). Continuing.
+* .include "r+c/res_high__cap_high__lin.spice"; HSpice Parser Retained (as a comment). Continuing.
+* Special cells
+.INCLUDE specialized_cells.spice
+.ENDL hh
+* High-Low corner (hl)
+
+.LIB hl
+.PARAM MC_MM_SWITCH=0
+.PARAM MC_PR_SWITCH=0
+* MOSFET
+.INCLUDE tt.spice
+* Resistor/Capacitor
+* .include "r+c/res_high__cap_low.spice"; HSpice Parser Retained (as a comment). Continuing.
+* .include "r+c/res_high__cap_low__lin.spice"; HSpice Parser Retained (as a comment). Continuing.
+* Special cells
+.INCLUDE specialized_cells.spice
+.ENDL hl
+* Low-High corner (lh)
+
+.LIB lh
+.PARAM MC_MM_SWITCH=0
+.PARAM MC_PR_SWITCH=0
+* MOSFET
+.INCLUDE tt.spice
+* Resistor/Capacitor
+* .include "r+c/res_low__cap_high.spice"; HSpice Parser Retained (as a comment). Continuing.
+* .include "r+c/res_low__cap_high__lin.spice"; HSpice Parser Retained (as a comment). Continuing.
+* Special cells
+.INCLUDE specialized_cells.spice
+.ENDL lh
+* Typical corner with mismatch (tt_mm)
+
+.LIB tt_mm
+.PARAM MC_MM_SWITCH=1
+.PARAM MC_PR_SWITCH=0
+* MOSFET
+.INCLUDE tt.spice
+* Resistor/Capacitor
+* .include "r+c/res_typical__cap_typical.spice"; HSpice Parser Retained (as a comment). Continuing.
+* .include "r+c/res_typical__cap_typical__lin.spice"; HSpice Parser Retained (as a comment). Continuing.
+* Special cells
+.INCLUDE specialized_cells.spice
+.ENDL tt_mm
+* Slow-Fast corner with mismatch (sf_mm)
+
+.LIB sf_mm
+.PARAM MC_MM_SWITCH=1
+.PARAM MC_PR_SWITCH=0
+* MOSFET
+.INCLUDE sf.spice
+* Resistor/Capacitor
+* .include "r+c/res_typical__cap_typical.spice"; HSpice Parser Retained (as a comment). Continuing.
+* .include "r+c/res_typical__cap_typical__lin.spice"; HSpice Parser Retained (as a comment). Continuing.
+* Special cells
+.INCLUDE specialized_cells.spice
+.ENDL sf_mm
+* Fast-Fast corner with mismatch (ff_mm)
+
+.LIB ff_mm
+.PARAM MC_MM_SWITCH=1
+.PARAM MC_PR_SWITCH=0
+* MOSFET
+.INCLUDE ff.spice
+* Resistor/Capacitor
+* .include "r+c/res_typical__cap_typical.spice"; HSpice Parser Retained (as a comment). Continuing.
+* .include "r+c/res_typical__cap_typical__lin.spice"; HSpice Parser Retained (as a comment). Continuing.
+* Special cells
+.INCLUDE specialized_cells.spice
+.ENDL ff_mm
+* Slow-Slow corner with mismatch (ss_mm)
+
+.LIB ss_mm
+.PARAM MC_MM_SWITCH=1
+.PARAM MC_PR_SWITCH=0
+* MOSFET
+.INCLUDE ss.spice
+* Resistor/Capacitor
+* .include "r+c/res_typical__cap_typical.spice"; HSpice Parser Retained (as a comment). Continuing.
+* .include "r+c/res_typical__cap_typical__lin.spice"; HSpice Parser Retained (as a comment). Continuing.
+* Special cells
+.INCLUDE specialized_cells.spice
+.ENDL ss_mm
+* Fast-Slow corner with mismatch (fs_mm)
+
+.LIB fs_mm
+.PARAM MC_MM_SWITCH=1
+.PARAM MC_PR_SWITCH=0
+* MOSFET
+.INCLUDE fs.spice
+* Resistor/Capacitor
+* .include "r+c/res_typical__cap_typical.spice"; HSpice Parser Retained (as a comment). Continuing.
+* .include "r+c/res_typical__cap_typical__lin.spice"; HSpice Parser Retained (as a comment). Continuing.
+* Special cells
+.INCLUDE specialized_cells.spice
+.ENDL fs_mm
+* Low-Low corner with mismatch (ll_mm)
+
+.LIB ll_mm
+.PARAM MC_MM_SWITCH=1
+.PARAM MC_PR_SWITCH=0
+* MOSFET
+.INCLUDE tt.spice
+* Resistor/Capacitor
+* .include "r+c/res_low__cap_low.spice"; HSpice Parser Retained (as a comment). Continuing.
+* .include "r+c/res_low__cap_low__lin.spice"; HSpice Parser Retained (as a comment). Continuing.
+* Special cells
+.INCLUDE specialized_cells.spice
+.ENDL ll_mm
+* High-High corner with mismatch (hh_mm)
+
+.LIB hh_mm
+.PARAM MC_MM_SWITCH=1
+.PARAM MC_PR_SWITCH=0
+* MOSFET
+.INCLUDE tt.spice
+* Resistor/Capacitor
+* .include "r+c/res_high__cap_high.spice"; HSpice Parser Retained (as a comment). Continuing.
+* .include "r+c/res_high__cap_high__lin.spice"; HSpice Parser Retained (as a comment). Continuing.
+* Special cells
+.INCLUDE specialized_cells.spice
+.ENDL hh_mm
+* High-Low corner with mismatch (hl_mm)
+
+.LIB hl_mm
+.PARAM MC_MM_SWITCH=1
+.PARAM MC_PR_SWITCH=0
+* MOSFET
+.INCLUDE tt.spice
+* Resistor/Capacitor
+* .include "r+c/res_high__cap_low.spice"; HSpice Parser Retained (as a comment). Continuing.
+* .include "r+c/res_high__cap_low__lin.spice"; HSpice Parser Retained (as a comment). Continuing.
+* Special cells
+.INCLUDE specialized_cells.spice
+.ENDL hl_mm
+* Low-High corner with mismatch (lh_mm)
+
+.LIB lh_mm
+.PARAM MC_MM_SWITCH=1
+.PARAM MC_PR_SWITCH=0
+* MOSFET
+.INCLUDE tt.spice
+* Resistor/Capacitor
+* .include "r+c/res_low__cap_high.spice"; HSpice Parser Retained (as a comment). Continuing.
+* .include "r+c/res_low__cap_high__lin.spice"; HSpice Parser Retained (as a comment). Continuing.
+* Special cells
+.INCLUDE specialized_cells.spice
+.ENDL lh_mm
+* Monte Carlo process variation
+
+.LIB mc
+
+.PARAM MC_MM_SWITCH=0
+
+.PARAM MC_PR_SWITCH=1
+.INCLUDE critical.spice
+
+.INCLUDE montecarlo.spice
+.ENDL mc
+

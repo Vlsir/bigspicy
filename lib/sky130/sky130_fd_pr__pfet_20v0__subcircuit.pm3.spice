@@ -1,0 +1,321 @@
+** Translated using xdm 2.6.0 on Nov_14_2022_16_05_26_PM
+** from /tmp/_MEItbfi7Y/hspice.xml
+** to /tmp/_MEItbfi7Y/xyce.xml
+
+* Copyright 2020 The SkyWater PDK Authors
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     https://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+* SKY130 Spice File.
+
+.INCLUDE sky130_fd_pr__pfet_20v0__parasitic__diode_pw2dn.model.spice
+.SUBCKT sky130_fd_pr__pfet_20v0 d g s b 
++ PARAMS: W=50u L=2u M=1 T=30 AD=0 AS=0 PD=0 PS=0 NRD=0 NRS=0
+.PARAM 
++ RDRIFT_TNOM_P20VHV1=1.595800e+004 VGDEP=1.102900e-001 VTH=7.000000e-001 VBDEP=-5.260300e-001 
++ VTH2=+1.048000e-001 HVVSAT=1.878600e+000 AVSAT=7.467500e-001 DW_P20VHV1=9.000000e-007 
++ L_P20VHV1=0.50 HVVBDEP=-2.490600e-002
+.PARAM 
++ W_P20VHV1=30.0 FETW_P20VHV1=30.0 NRD_P20VHV1=2.0 NRS_P20VHV1=2.0 AD_P20VHV1='294.5*0.5' 
++ AS_P20VHV1=8.7 PD_P20VHV1='91.5*0.5' PS_P20VHV1=60.58 DELVTO_P20VHV1=0.0
+.PARAM TC1_RDRIFT_P20VHV1=0.00621917042930238
+
+
+
+
+.PARAM TC2_RDRIFT_P20VHV1=0.000021055807983754
+.PARAM 
++ RDRIFT_P20VHV1='rdrift_tnom_p20vhv1*((w_p20vhv1-dw_p20vhv1)/w_p20vhv1)*(1+tc1_rdrift_p20vhv1*(temp-30)+tc2_rdrift_p20vhv1*(temp-30)*(temp-30))*sky130_fd_pr__pfet_20v0__rdrift_mult'
+M1 d1 g s b sky130_fd_pr__pfet_20v0__base 
++ M={m} AD=0 AS={as_p20vhv1} L={l_p20vhv1} NRD={nrd_p20vhv1} NRS={nrs_p20vhv1} 
++ PD=0 PS={ps_p20vhv1} W={w_p20vhv1}
+* rldd d d1 r='abs( (1/fetw_p20vhv1)*(rdrift_p20vhv1 /(1+0*(0-0-0 ))  )*  (1+0*pwr((abs(v(s,d)+vth2-min(v(s,d1),60))/(hvvsat*(1+hvvbdep*v(s,b)))),avsat)) )' tc1 = 0 tc2 = 0 m = {m}; HSpice Parser Retained (as a comment). Continuing.
+Dnw1 d b sky130_fd_pr__pfet_20v0__parasitic__diode_pw2dn AREA='ad_p20vhv1/2'
+Dnw2 d1 b sky130_fd_pr__pfet_20v0__parasitic__diode_pw2dn AREA='ad_p20vhv1/2'
+* DC IV MOS Parameters
+* BSIM4 - Model Selectors
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+* BSIM4 - Process Parameters
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+* Threshold Voltage Parameters
+
+
+
+
+
+
+
+* NEW BSIM4 Parameters for Level 54
+
+
+
+
+
+
+
+
+
+
+
+
+* Mobility Parameters
+
+
+
+
+
+
+* BSIM4 - Mobility Parameters
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+* Subthreshold Current Parameters
+
+
+
+
+
+
+* BSIM4 - Sub-threshold parameters
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+* Rout Parameters
+
+
+* BSIM4 - Rout Parameters
+
+
+
+
+
+
+
+
+
+
+
+
+* BSIM4 - Gate Induced Drain Leakage Model Parameters
+
+
+
+
+* BSIM4 - Gate Leakage Current Parameters
+
+
+
+
+
+
+
+
+* Temperature Effects Parameters
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+* BSIM4 - High Speed RF Model Parameters
+
+
+
+
+
+
+
+
+
+* BSIM4 - Flicker and Thermal Noise Parameters
+
+
+
+
+
+
+
+
+* BSIM4 - Layout Dependent Parasitic Model Parameters
+
+
+
+
+
+
+
+
+* Diode DC IV Parameters
+
+
+
+
+
+
+* BSIM4 - Diode DC IV parameters
+* Diode and FET Capacitance Parameters
+
+
+
+
+
+
+
+
+
+* BSIM4 - FET and Diode capacitance parameters
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+* Stress Parameters
+
+
+
+
+
+
+
+
+
+
+.ENDS sky130_fd_pr__pfet_20v0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*.END

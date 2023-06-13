@@ -1,0 +1,34 @@
+** Translated using xdm 2.6.0 on Nov_14_2022_16_05_28_PM
+** from /tmp/_MEItbfi7Y/hspice.xml
+** to /tmp/_MEItbfi7Y/xyce.xml
+
+* Copyright 2020 The SkyWater PDK Authors
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     https://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+* SKY130 Spice File.
+
+.PARAM SKY130_FD_PR__CAP_VPP_11P5X11P7_L1M1M2M3_SHIELDM4__SLOPE=0.0
+.PARAM SKY130_FD_PR__CAP_VPP_06P8X06P1_L1M1M2_NOSHIELD__SLOPE=0.0
+* statistics {
+*   mismatch {
+*     vary  sky130_fd_pr__cap_vpp_11p5x11p7_l1m1m2m3_shieldm4__slope dist=gauss std=1.0
+*     vary  sky130_fd_pr__cap_vpp_06p8x06p1_l1m1m2_noshield__slope dist=gauss std=1.0
+*   }
+* }
+.INCLUDE sky130_fd_pr__cap_vpp_08p6x07p8_m1m2m3_shieldl1.model.spice
+.INCLUDE sky130_fd_pr__cap_vpp_04p4x04p6_m1m2m3_shieldl1.model.spice
+.INCLUDE sky130_fd_pr__cap_vpp_11p5x11p7_m1m2m3_shieldl1.model.spice
+.INCLUDE sky130_fd_pr__cap_vpp_11p5x11p7_l1m1m2m3_shieldm4.model.spice
+.INCLUDE sky130_fd_pr__cap_vpp_11p5x11p7_l1m1m2m3_shieldpom4.model.spice
+.INCLUDE sky130_fd_pr__cap_vpp_06p8x06p1_l1m1m2m3_shieldpom4.model.spice
+.INCLUDE sky130_fd_pr__cap_vpp_06p8x06p1_m1m2m3_shieldl1m4.model.spice

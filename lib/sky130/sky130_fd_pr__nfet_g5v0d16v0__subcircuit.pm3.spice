@@ -1,0 +1,37 @@
+** Translated using xdm 2.6.0 on Nov_14_2022_16_05_26_PM
+** from /tmp/_MEItbfi7Y/hspice.xml
+** to /tmp/_MEItbfi7Y/xyce.xml
+
+* Copyright 2020 The SkyWater PDK Authors
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     https://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+* SKY130 Spice File.
+
+.SUBCKT sky130_fd_pr__nfet_g5v0d16v0 d g s b 
++ PARAMS: W=5.0 L=0.7 NF=1 AD=0 AS=0 PD=0 PS=0 NRD=0 NRS=0 DELVTO=0 M=1 SA=0.28 SB=2.41 
++ SD=0 MULT=1
+.PARAM 
++ SKY130_FD_PR__NFET_G5V0D16V0__RDIFF=5.906500e+003 SKY130_FD_PR__NFET_G5V0D16V0__RDIFF_TC1=1.483000e-003 
++ SKY130_FD_PR__NFET_G5V0D16V0__RDIFF_TC2=7.824000e-006
+*.param sb_cadfixedvalue_nvhv=2.41
+.PARAM SB_CADFIXEDVALUE_NVHV=1.585
+Xmain1 d1 g s b sky130_fd_pr__nfet_g5v0d16v0__base 
++ PARAMS: W={w} L={l} NF={nf} AD=0 AS={as} PD=0 PS={ps} NRD={nrd} NRS={nrs} DELVTO={delvto} 
++ M={m} MULT={mult} SA={sa} SB={sb_cadfixedvalue_nvhv}
+Rldd_nvhv d d1 
++ R='(1/w)*sky130_fd_pr__nfet_g5v0d16v0__rdiff*sky130_fd_pr__nfet_g5v0d16v0__rdiff_mult' 
++ TC1='sky130_fd_pr__nfet_g5v0d16v0__rdiff_tc1' 
++ TC2='sky130_fd_pr__nfet_g5v0d16v0__rdiff_tc2'
+Dnw1 b d sky130_fd_pr__model__parasitic__diode_ps2nw AREA='ad/2'
+Dnw2 b d1 sky130_fd_pr__model__parasitic__diode_ps2nw AREA='ad/2'
+.ENDS sky130_fd_pr__nfet_g5v0d16v0

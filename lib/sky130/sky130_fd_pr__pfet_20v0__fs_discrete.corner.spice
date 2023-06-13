@@ -1,0 +1,39 @@
+** Translated using xdm 2.6.0 on Nov_14_2022_16_05_18_PM
+** from /tmp/_MEItbfi7Y/hspice.xml
+** to /tmp/_MEItbfi7Y/xyce.xml
+
+* Copyright 2020 The SkyWater PDK Authors
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     https://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+* SKY130 Spice File.
+
+.PARAM 
++ SKY130_FD_PR__PFET_20V0__TOXE_MULT=0.948 SKY130_FD_PR__PFET_20V0__RSHN_MULT=1.0 SKY130_FD_PR__PFET_20V0__OVERLAP_MULT=0.10 
++ SKY130_FD_PR__PFET_20V0__AJUNCTION_MULT=9.3222e-1 SKY130_FD_PR__PFET_20V0__PJUNCTION_MULT=9.4436e-1 
++ SKY130_FD_PR__PFET_20V0__LINT_DIFF=1.7325e-8 SKY130_FD_PR__PFET_20V0__WINT_DIFF=-3.2175e-8 
++ SKY130_FD_PR__PFET_20V0__DLC_DIFF=8.7000e-8 SKY130_FD_PR__PFET_20V0__DWC_DIFF=-3.2175e-8
+*
+
+
+
+
+
+* sky130_fd_pr__pfet_20v0, Bin 000, W = 30.0, L = 1.0
+* -----------------------------------
+.PARAM 
++ SKY130_FD_PR__PFET_20V0__RDRIFT_MULT=7.4899e-1 SKY130_FD_PR__PFET_20V0__VTH0_DIFF=2.2906e-1 
++ SKY130_FD_PR__PFET_20V0__U0_DIFF=1.1548e-2 SKY130_FD_PR__PFET_20V0__K2_DIFF=0.0 
++ SKY130_FD_PR__PFET_20V0__AGIDL_DIFF=0.0
+.INCLUDE sky130_fd_pr__pfet_20v0__subcircuit.pm3.spice
+
+
