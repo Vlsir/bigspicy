@@ -493,6 +493,17 @@ class Slice:
 #  def __hash__(self, other):
 #    return hash((self.signal.name if self.signal else None, self.top, self.bottom))
 
+# TODO(aryap): Assignments can be modeled as a module which shorts inputs to
+# outputs. This is how they will be stored in VLSIR, as a "SHORT" external
+# module, with the understanding that this function is defined by all users of
+# VLSIR (hopefully using the library, I think is the goal).
+#
+# So this Assignment class needs to be replaced with a built-in Module that is
+# passive and just maps inputs to outputs using the existing VLSIR model.
+#
+# I guess we just have a 1-wide SHORT Module that has an 'in' and an 'out'
+# port. In its instantiation it connects to Slices, concats or signals at
+# either end.
 
 # An Assignment models the mapping of signals, slices or concatenations of
 # signals to another set of signals, slices or concatenations thereof.
@@ -503,7 +514,9 @@ class Assignment:
     self.left = left
     self.right = right
 
-    assert left.Width() == right.Width()
+    if left.Width() != right.Width():
+      print('warning: mismatched assignment widths '
+            f'{left.Width()} vs {right.Width()}')
 
     if isinstance(self.left, Concatenation) or isinstance(
         self.right, Concatenation):
