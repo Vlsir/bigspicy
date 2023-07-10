@@ -2,6 +2,7 @@
 Verilog Reading via `pyverilog.vparser.ast`, transforming its AST nodes into 
 `Design` and `Module` counterparts.
 """
+# vim: set shiftwidth=2 softtabstop=2 ts=2 expandtab:
 
 from typing import List 
 from pathlib import Path 
@@ -27,39 +28,49 @@ class DesignReader:
       include_paths: List[Path], 
       defines: List[Path]
     ):
-    first, directives = verilog_parser.parse(verilog_files,
-                                             preprocess_include=include_paths,
-                                             preprocess_define=defines)
-    # 'first' is a pyverilog.vparser.ast.Node
-    queue = [first]
-    modules = []
-    while queue:
-      node = queue.pop()
-      if isinstance(node, ast.ModuleDef):
-        # Circuit.Module will read the node and its children to parse the
-        # Verilog.
-        module = Module.FromVerilog(node)
-        modules.append(module)
-      #if node.attr_names:
-      #  for attr in node.attr_names:
-      #    print('attr: {}={}'.format(attr, getattr(node, attr)))
-      for c in node.children():
-        queue.append(c)
+    # FIXME(growly): Calling verilog_parser.parse in the loop causes the LALR
+    # tables to be regenerated every time, which sucks. It doesn't look like
+    # pyverilog's parser is aware of the source file it is parsing at any given
+    # time, since this information is lost in the call to verilog_parser.parse.
+    # It seems we would have to reimplement pyverilog.vparser.VerilogCodeParser
+    # to try and prevent duplicate re-instantiation of the VerilogParser
+    # object.
+    for verilog_file in verilog_files:
+      first, directives = verilog_parser.parse([verilog_file],
+                                               preprocess_include=include_paths,
+                                               preprocess_define=defines)
+      # 'first' is a pyverilog.vparser.ast.Node
+      queue = [first]
+      modules = []
+      while queue:
+        node = queue.pop()
+        if isinstance(node, ast.ModuleDef):
+          # Circuit.Module will read the node and its children to parse the
+          # Verilog.
+          module = Module.FromVerilog(node, path=verilog_file)
+          modules.append(module)
+        #if node.attr_names:
+        #  for attr in node.attr_names:
+        #    print('attr: {}={}'.format(attr, getattr(node, attr)))
+        for c in node.children():
+          queue.append(c)
 
-    # Tidy up references made to other modules.
-    for module in modules:
-      name = module.name
-      if name in design.known_modules:
-        raise Exception('duplicate definition of {}'.format(name))
-        #print(f'warning! {name} is defined multiple times, and all but one '
-        #      'definitions will be ignored!')
-      design.known_modules[name] = module
-      if name in design.unknown_references:
-        del design.unknown_references[name]
-      # Maybe we referenced it already.
-      for _, instance in module.instances.items():
-        if instance.module_name not in design.known_modules:
-          design.unknown_references[instance.module_name].append(instance)
+      # Add all known modules to the design so that subsequent modules in the
+      # same file can reference them.
+      for module in modules:
+        design.AddModule(module.name, module, path=verilog_file)
+
+      # Tidy up references made to other modules.
+      for module in modules:
+        name = module.name
+        if name in design.unknown_references:
+          del design.unknown_references[name]
+        # Maybe we referenced it already.
+        for _, instance in module.instances.items():
+          module = design.GetModule(instance.module_name, path=verilog_file)
+          if module is None:
+            design.unknown_references[instance.module_name].append(
+                (verilog_file, instance))
 
 
 class ModuleReader:

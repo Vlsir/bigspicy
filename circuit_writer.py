@@ -139,7 +139,7 @@ class CircuitWriter():
     elif connection.slice is not None:
       CircuitWriter.ToSlice(connection.slice, conn_pb.target.slice)
     elif connection.concat is not None:
-      raise Exception(f'Don\'t know how to map concats in conncections: {connection}')
+      raise Exception(f'Don\'t know how to map concats in connections: {connection}')
     else:
       raise Exception(f'Cannot map disconnected Connection object: {connection}')
     return conn_pb
@@ -193,7 +193,11 @@ class CircuitWriter():
     #package_pb.name = design.top
     for name, module in design.external_modules.items():
       CircuitWriter.ToExternalModule(module, package_pb.ext_modules.add())
-    for name, module in design.known_modules.items():
+    for name, definitions in design.modules_by_name_then_path.items():
+      if len(definitions) > 1:
+        raise NotImplementedError('Don\'t know how to write multiple module'
+            ' defs to the same VLSIR proto')
+      module = list(definitions.values())[0]
       CircuitWriter.ToModule(module, package_pb.modules.add())
 
     return package_pb
@@ -368,30 +372,31 @@ class CircuitWriter():
     design = self.design
     for module_pb in package_pb.modules:
       module = CircuitWriter.FromModule(module_pb)
-      design.known_modules[module.name] = module
+      design.AddModule(module.name, module)
     for module_pb in package_pb.ext_modules:
       module = CircuitWriter.FromExternalModule(module_pb)
       if module.name in circuit.PRIMITIVE_MODULES:
         continue
       design.external_modules[module.name] = module
 
-    for module_name, module in design.known_modules.items():
-      for instance_name, instance in module.instances.items():
-        instance_of = instance.module_name
-        referenced = None
-        if instance_of in circuit.PRIMITIVE_MODULES:
-          referenced = circuit.PRIMITIVE_MODULES[instance_of]
-          # TODO(growly): This might not be true for all primitive modules.
-          referenced.is_passive = True
-        elif instance_of in design.known_modules:
-          referenced = design.known_modules[instance_of]
-        elif instance_of in design.external_modules:
-          referenced = design.external_modules[instance_of]
-        else:
-          raise Exception(
-              f'Instance {instance_name} of module {module_name} refers '
-              f'instantiates unknown module {instance_of}')
-        instance.module = referenced
+    for module_name, definitions in design.modules_by_name_then_path.items():
+      for path, module in definitions.items():
+        for instance_name, instance in module.instances.items():
+          instance_of = instance.module_name
+          referenced = None
+          if instance_of in circuit.PRIMITIVE_MODULES:
+            referenced = circuit.PRIMITIVE_MODULES[instance_of]
+            # TODO(growly): This might not be true for all primitive modules.
+            referenced.is_passive = True
+          elif instance_of in design.modules_by_name_then_path:
+            referenced = design.GetModule(instance_of)
+          elif instance_of in design.external_modules:
+            referenced = design.external_modules[instance_of]
+          else:
+            raise Exception(
+                f'Instance {instance_name} of module {module_name} refers '
+                f'instantiates unknown module {instance_of}')
+          instance.module = referenced
 
 
   def ReadProtoToDesign(self, filename):

@@ -232,7 +232,7 @@ class SPEFReader():
       for line in f:
         SPEFReader.COMMENT_RE.sub('', line)
         self.ReadLine(line)
-    return self.ToModule()
+    return self.ToModule(path=filename)
 
   def ReadLine(self, line):
     # The state machine that determines what kind of line we're reading changes
@@ -483,9 +483,11 @@ class SPEFReader():
     else:
       print(f'cell:port: {signal_name}')
 
-  def ToModule(self):
+  def ToModule(self, path=None):
     """Generate a Module describing the netlist encoded by the SPEF file."""
     module = circuit.Module()
+    if path is not None:
+      module.paths.add(path)
     if not self.design_name:
       raise SPEFNoTopDesignName()
     module.name = circuit.VerilogIdentifier(self.design_name.strip('"')).raw
@@ -592,7 +594,8 @@ class SPEFReader():
       if node.IsBusReference():
         # Create a Slice instead of a Signal.
         raise NotImplementedError()
-      connection.signal = module.GetOrCreateSignal(signal_name)
+      signal = module.GetOrCreateSignal(signal_name)
+      connection.signal = signal
       connection.instance = instance
       signal.Connect(connection)
       if port_name in instance.connections:

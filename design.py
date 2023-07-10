@@ -13,34 +13,88 @@ import circuit_writer
 import spef
 import spice
 import spice_analyser
+import verilog
 
 
 class Design():
   def __init__(self):
     self.top = None
-    self.known_modules = {}
+  
+    # The list of modules for which we have definitions. The first key is the
+    # module's name and the second key is the path (absolute) in which it was
+    # defined.
+    self.modules_by_name_then_path = collections.defaultdict(dict)
+
+    # A list of unknown modules (black boxes). Values are circuit.ExternalModules.
     self.external_modules = {}
+
+    # Lists of pairs of (path, instance name) for a given module name recording
+    # instantiations of the given module at the given path (which could be
+    # None, if this is not known).
     self.unknown_references = collections.defaultdict(list)
+
     self.external_modules[circuit.CAPACITOR.name] = circuit.CAPACITOR
     self.external_modules[circuit.RESISTOR.name] = circuit.RESISTOR
     self.external_modules[circuit.INDUCTOR.name] = circuit.INDUCTOR
     self.power_net_names = ['VDD', 'VPWR']
     self.ground_net_names = ['VSS', 'VGND']
 
+  def AddModule(self, module_name, module, path=None):
+    try:
+      previous_defs = self.modules_by_name_then_path[module_name]
+      existing = previous_defs[path]
+      raise Exception(f'Duplicate definition of {module_name} at path {path}')
+    except KeyError:
+      # No previous definitions.
+      pass
+    self.modules_by_name_then_path[module_name][path] = module
+
+  # Look up a module by name and optionally file path. If there are multiple
+  # definitions for a module, return any of them.
+  # TODO(growly): It might be nice to guarantee that we return the first
+  # definition up the path hierarchy, to help with matching definitions in
+  # different soruces (e.g. one in verilog and the other in SPEF).
+  def GetModule(self, module_name, path=None):
+    if module_name not in self.modules_by_name_then_path:
+      return None
+    definitions = self.modules_by_name_then_path[module_name]
+    if len(definitions) == 1:
+      return list(definitions.values())[0]
+
+    if path is None:
+      print(f'Multiple definitions exist for {module_name}, but no path was '
+            'given for the source of the reference. Picking the first one.')
+      return list(definitions.values())[0]
+  
+    # If there's an exact match (same file, presumably), return it.
+    if path in definitions:
+      return definitions[path]
+
+    # Otherwise, find the definition whose path has the longest common prefix
+    # with the requestor path.
+    print(f'Multiple definitions exist for {module_name}, path={path}, '
+          'picking longest common prefix')
+
+    # The second key is the length of the common prefix between the searched 
+    other_paths = [
+        (p, len(os.path.commonprefix(path, p))) for p in definitions.keys()]
+    other_paths.sort(other_paths, key=lambda x: x[1])
+    print(other_paths)
+    return other_paths[0][0]
+
   def FindTop(self, use_name):
     if use_name is None:
       # Can find top, but not worth convenience.
       raise NotImplementedError('will not find top today')
     try:
-      top = self.known_modules[use_name]
+      top = self.GetModule(use_name)
       self.top = top
       return top
     except:
       return None
 
   def ParseVerilog(self, verilog_files, include_paths, defines):
-    from verilog import DesignReader
-    return DesignReader.ParseVerilog(
+    return verilog.DesignReader.ParseVerilog(
       design=self,
       verilog_files=verilog_files, 
       include_paths=include_paths, 
@@ -48,22 +102,22 @@ class Design():
     )
 
   def Link(self):
-    # At this point, every module we should know about should be available to us.
-    # Replace every unknown reference with a black box.
+    # At this point, every module we should know about *should* be available to
+    # us. Replace every unknown reference with a black box.
     for name, instances in self.unknown_references.items():
-      if name in self.known_modules:
-        # Module has since been loaded.
-        internal_module = self.known_modules[name]
-        for instance in instances:
+      for path, instance in instances:
+        internal_module = self.GetModule(name, path)
+        if internal_module is not None:
+          # Module has since been loaded.
           assert(instance.module_name == name)
           instance.module = internal_module
 
-        if name in self.external_modules:
-          del self.external_modules[name]
-        continue
-      elif name in self.external_modules:
-        # Nothing to do.
-        continue
+          if name in self.external_modules:
+            del self.external_modules[name]
+          continue
+        elif name in self.external_modules:
+          # Nothing to do.
+          continue
 
       # Create an external module.
       external_module = circuit.ExternalModule()
@@ -73,78 +127,78 @@ class Design():
       # external_module.GuessPorts(instances)
       self.external_modules[name] = external_module
 
-    for module in self.known_modules.values():
-      for _, instance in module.instances.items():
-        ref_name = instance.module_name
-        module = None
-        if ref_name in self.known_modules:
-          module = self.known_modules[ref_name]
-        elif ref_name in self.external_modules:
-          module = self.external_modules[ref_name]
-        else:
-          raise Exception('instance references module which should be known or '
-                          'external, but is neither: {}'.format(ref_name))
+    for definitions in self.modules_by_name_then_path.values():
+      for path, module in definitions.items():
+        for _, instance in module.instances.items():
+          ref_name = instance.module_name
+          module = self.GetModule(ref_name, path=path)
+          if module is None and ref_name in self.external_modules:
+            module = self.external_modules[ref_name]
+          if module is None:
+            raise Exception('instance references module which should be known or '
+                            'external, but is neither: "{}"'.format(ref_name))
 
-        # Internal or external, we need one of those objects here.
-        instance.module = module
+          # Internal or external, we need one of those objects here.
+          instance.module = module
 
-        for i, signal in enumerate(instance.connections_by_order):
-          if not module.port_order:
-            print(f'warning: instance {instance.name} is of {instance.module_name} '
-                  f'which has no known port_order')
-            continue
-          # Use the ordered connections to connect up ports, now that we know
-          # what the master Module is.
-          try:
-              port_name = module.port_order[i]
-          except IndexError:
-              print(f'warning: instance {instance.name} of module '
-                    f'{instance.module_name} has too many connections; signal '
-                    f'{signal} will not be connected')
-              known_ports = ', '.join(module.port_order)
-              connections = ', '.join(
-                  x.name for x in instance.connections_by_order)
-              print(f'\tknown ports: {known_ports}\n'
-                    f'\tinstance connections: {connections}')
+          for i, signal in enumerate(instance.connections_by_order):
+            if not module.port_order:
+              print(f'warning: instance {instance.name} is of {instance.module_name} '
+                    f'which has no known port_order')
               continue
+            # Use the ordered connections to connect up ports, now that we know
+            # what the master Module is.
+            try:
+                port_name = module.port_order[i]
+            except IndexError:
+                print(f'warning: instance {instance.name} of module '
+                      f'{instance.module_name} has too many connections; signal '
+                      f'{signal} will not be connected')
+                known_ports = ', '.join(module.port_order)
+                connections = ', '.join(
+                    x.name for x in instance.connections_by_order)
+                print(f'\tknown ports: {known_ports}\n'
+                      f'\tinstance connections: {connections}')
+                continue
 
-          connection = circuit.Connection(port_name)
-          connection.signal = signal
-          connection.instance = instance
-          instance.connections[port_name] = connection
+            connection = circuit.Connection(port_name)
+            connection.signal = signal
+            connection.instance = instance
+            instance.connections[port_name] = connection
 
   def ParseSPEF(self, spef_files):
     for f in spef_files:
       spef_reader = spef.SPEFReader('VSS')
       module = spef_reader.ReadSPEF(f)
-      self.AddModuleFromSPEF(module)
+      self.AddModuleFromSPEF(module, path=f)
 
-  def AddModuleFromSPEF(self, module):
-    if module.name in self.known_modules:
+  def AddModuleFromSPEF(self, module, path=None):
+    existing = self.GetModule(module.name)
+    if existing is not None:
       # Have to do a merge/verification.
       print(f'merging module: {module.name}')
-      existing = self.known_modules[module.name]
       self.MergeSPEFIntoVerilogModule(existing, module)
       del module
     else:
       print(f'adding module: {module.name}')
-      self.known_modules[module.name] = module
+      self.AddModule(module.name, module)
 
   def CheckPowerAndGround(self):
     # Makes sure power and ground are connected.
     # TODO(growly): This needs to be a bit more robust. User should specify
     # what the power and ground nets are. Additionally, there may be other
     # implicit signals which we should be able to discover: clk, rst, etc.
-    for module_name, module in self.known_modules.items():
-      for net in self.power_net_names + self.ground_net_names:
-        if net in module.signals and not net in module.ports:
-          print(f'creating {module_name} port for implicit net: {net}')
-          signal = module.GetOrCreateSignal(net)
-          new_port = circuit.Port()
-          new_port.signal = signal
-          new_port.direction = circuit.Port.Direction.NONE
-          module.ports[net] = new_port
-          module.port_order.insert(0, net)
+    for module_name, definitions in self.modules_by_name_then_path.items():
+      for path, module in definitions.items():
+        for net in self.power_net_names + self.ground_net_names:
+          if net in module.signals and not net in module.ports:
+            print(f'creating {path}/{module_name} port for implicit net: {net}')
+            signal = module.GetOrCreateSignal(net)
+            new_port = circuit.Port()
+            new_port.signal = signal
+            new_port.direction = circuit.Port.Direction.NONE
+            module.ports[net] = new_port
+            module.port_order.insert(0, net)
 
 
   def MergeSPEFIntoVerilogModule(self, verilog_module, spef_module):
@@ -249,10 +303,15 @@ class Design():
     for name, new in spef_module.signals.items():
       if name in verilog_module.signals:
         existing = verilog_module.signals[name]
-        if existing.width != new.width:
-          raise SPEFBadAssumption(
-              f'merging in signal {name} with different width {new.width} vs '
-              '{existing.width}')
+        if existing.width < new.width:
+          # It's ok if the width we infer from the SPEF file is smaller than an
+          # explicit existing width, because the SPEF file might not make
+          # reference to all of the signal's wires. But widening an
+          # explicitly-sized signal could be a bad sign.
+          raise spef.SPEFBadAssumption(
+              f'merging in signal {name} with greater width {new.width} vs '
+              f'{existing.width}; existing defs in {verilog_module.paths}, new '
+              f'in {spef_module.paths}')
         #existing = verilog_module.signals[name]
         #existing.Disconnect()
         #del verilog_module.signals[name]
@@ -375,22 +434,22 @@ class Design():
       else:
         for subckt in parser.subckts:
           module = subckt.ToModule(self)
-          if module.name in self.known_modules:
-              print(f'warning: multiple definitions for subckt {module.name}, '
-                    f'overwriting previous')
-          self.known_modules[module.name] = module
+          self.AddModule(module.name, module, path=file_name)
 
           for instance in module.instances.values():
-            if instance.module_name not in self.known_modules:
-              self.unknown_references[instance.module_name].append(instance)
+            module = self.GetModule(instance.module_name, path=file_name)
+            if module is None:
+              self.unknown_references[instance.module_name].append(
+                  (file_name, instance))
 
 
   def Show(self):
     print('design: ')
-    print('{} known modules:'.format(len(self.known_modules)))
-    for name, module in self.known_modules.items():
+    print('{} known modules:'.format(len(self.modules_by_name_then_path)))
+    for name, definitions in self.modules_by_name_then_path.items():
       print('- {}'.format(name))
-      print('    {}'.format(module))
+      for path, module in definitions.items():
+        print('    {}: {}'.format(path, module))
     print('{} external modules:'.format(len(self.external_modules)))
     for name, module in self.external_modules.items():
       print('- {}'.format(name))

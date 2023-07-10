@@ -374,10 +374,9 @@ class SpiceWriter():
     return InsertSpiceApprovedPrefix(instance_name, additional_prefix)
 
   def SpiceInstantiation(self, instance, signal_map={}, prefix=None, generate_names=True):
-    if instance.module_name in self.design.known_modules:
-      module = self.design.known_modules[instance.module_name]
-    else:
-      module = self.design.external_modules[instance.module_name]
+    module = self.design.GetModule(
+        instance.module_name, path=None) or self.design.external_modules[
+            instance.module_name]
     connection_list = []
     if not module.port_order:
       print(f'warning: no port order for module {instance.module_name}, '

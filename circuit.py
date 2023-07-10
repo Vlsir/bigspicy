@@ -745,6 +745,9 @@ class Module(ExternalModule):
   def __init__(self):
     ExternalModule.__init__(self)
 
+    # Paths which contain the definition of this module.
+    self.paths = set()
+
     self.instances = {}
 
     # The left object in the assignment becomes the index.
@@ -762,12 +765,14 @@ class Module(ExternalModule):
     self.inductance_unit_prefix = None
     
   @classmethod
-  def FromVerilog(cls, ast_node: "verilog.ast.Node") -> "Module":
+  def FromVerilog(cls, ast_node: "verilog.ast.Node", path=None) -> "Module":
     """ Create a `Module` from a `verilog.ast.Node`. """
     from verilog import ModuleReader 
     
     this = cls()
     ModuleReader.LoadAST(this, ast_node)
+    if path:
+      this.paths.add(path)
     return this 
 
   def __repr__(self):

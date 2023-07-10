@@ -573,7 +573,7 @@ class SpiceAnalyser:
       if region.dut_type in (
           circuit.DesignRegion.DUTType.SUB_REGION,
           circuit.DesignRegion.DUTType.MODULE):
-        module = self.design.known_modules[region_pb.for_top_module]
+        module = self.design.GetModule(region_pb.for_top_module)
       else:
         module = self.design.external_modules[region_pb.for_top_module]
       region.module = module
@@ -1593,8 +1593,9 @@ class SpiceAnalyser:
           modules.add(module)
     else:
       modules.update(
-          module for module in self.design.known_modules.values()
-          if module.name not in circuit.PRIMITIVE_MODULES)
+          module for module in definitions.values()
+            for definitions in self.design.modules_by_name_then_pathvalues()
+            if module.name not in circuit.PRIMITIVE_MODULES)
 
     for module in modules:
       self.AddInputCapacitanceTests(module)
