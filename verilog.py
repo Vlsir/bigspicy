@@ -36,6 +36,7 @@ class DesignReader:
     # to try and prevent duplicate re-instantiation of the VerilogParser
     # object.
     for verilog_file in verilog_files:
+      print(f'reading verilog: {verilog_file}')
       first, directives = verilog_parser.parse([verilog_file],
                                                preprocess_include=include_paths,
                                                preprocess_define=defines)

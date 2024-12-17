@@ -24,6 +24,8 @@ from spice_util import SIUnitPrefix
 
 class CircuitWriter():
 
+  num_shorts = 0
+
   CIRCUIT_TO_PB_PORT_DIRECTION_MAP = {
       circuit.Port.Direction.INPUT: circuit_pb.Port.Direction.INPUT,
       circuit.Port.Direction.OUTPUT: circuit_pb.Port.Direction.OUTPUT,
@@ -132,6 +134,17 @@ class CircuitWriter():
     return param_pb
 
   @staticmethod
+  def ToConcat(concatenation, concat_pb):
+    for part in concatenation.parts:
+      part_pb = concat_pb.parts.add()
+      if type(part) is circuit.Slice:
+        CircuitWriter.ToSlice(part, part_pb.slice)
+      elif type(part) is circuit.Signal:
+        part_pb.sig = part.name
+      else:
+        raise Exception(f'Unknown thing in Concatenation, {type(part)}: {part}')
+
+  @staticmethod
   def ToConnection(port_name, connection, conn_pb):
     conn_pb.portname = port_name
     if connection.signal is not None:
@@ -139,7 +152,7 @@ class CircuitWriter():
     elif connection.slice is not None:
       CircuitWriter.ToSlice(connection.slice, conn_pb.target.slice)
     elif connection.concat is not None:
-      raise Exception(f'Don\'t know how to map concats in connections: {connection}')
+      CircuitWriter.ToConcat(connection.concat, conn_pb.target.concat)
     else:
       raise Exception(f'Cannot map disconnected Connection object: {connection}')
     return conn_pb
@@ -166,13 +179,39 @@ class CircuitWriter():
     else:
       raise NotImplementedError('is this supposed to be a concat?')
 
-  @staticmethod
-  def ToAssignment(assignment, assignment_pb):
-    CircuitWriter.ToConnectionTarget(assignment.left, assignment_pb.left)
-    CircuitWriter.ToConnectionTarget(assignment.right, assignment_pb.right)
+  @classmethod  
+  def ToShort(cls, assignment, instance_pb):
+    for left, right in assignment.EnumerateWires():
+      # The name doesn't matter, but like all other instances, should be unique.
+      instance_pb.name = f'{circuit.SHORT.name}_{cls.num_shorts}'
+      instance_pb.module.local = 'SHORT'
+      cls.num_shorts += 1
+      # Connect left to 'A' and right to 'B'.
+      left_side = circuit.Connection('A')
+      left_side.Connect(left)
+      CircuitWriter.ToConnection('A', left_side, instance_pb.connections.add())
+      right_side = circuit.Connection('B')
+      right_side.Connect(right)
+      CircuitWriter.ToConnection('B', right_side, instance_pb.connections.add())
 
   @staticmethod
-  def ToModule(module, module_pb):
+  def FromShortInstance(instance):
+      # Assignments are stored as 'SHORT'-type external module instances.
+      if 'A' not in instance.connections:
+        raise Exception('SHORTs should have an "A" connection')
+      left_connection = instance.connections['A']
+      left = (left_connection.slice or left_connection.signal or
+          left_connection.concat)
+      if 'B' not in instance.connections:
+        raise Exception('SHORTs should have an "B" connection')
+      right_connection = instance.connections['B']
+      right = (right_connection.slice or right_connection.signal or
+          right_connection.concat)
+      assignment = circuit.Assignment(left, right)
+      return assignment
+
+  @staticmethod
+  def ToModule(design, module, module_pb):
     module_pb.name = module.name
     for name, value in module.default_parameters.items():
       CircuitWriter.ToParameter(name, value, module_pb.parameters.add())
@@ -183,22 +222,29 @@ class CircuitWriter():
       CircuitWriter.ToSignal(signal, module_pb.signals.add())
     for name, instance in module.instances.items():
       CircuitWriter.ToInstance(instance, module_pb.instances.add())
+
+    if module.assignments:
+      design.external_modules[circuit.SHORT.name] = circuit.SHORT
+
     for _, assignment in module.assignments.items():
-      CircuitWriter.ToAssignment(assignment, module_pb.assignments.add())
+      CircuitWriter.ToShort(assignment, module_pb.instances.add())
 
   def ToCircuitProto(self):
     design = self.design
 
     package_pb = circuit_pb.Package()
     #package_pb.name = design.top
-    for name, module in design.external_modules.items():
-      CircuitWriter.ToExternalModule(module, package_pb.ext_modules.add())
     for name, definitions in design.modules_by_name_then_path.items():
       if len(definitions) > 1:
         raise NotImplementedError('Don\'t know how to write multiple module'
             ' defs to the same VLSIR proto')
       module = list(definitions.values())[0]
-      CircuitWriter.ToModule(module, package_pb.modules.add())
+      # This might create additional external modules in the design, e.g.
+      # SHORTs.
+      CircuitWriter.ToModule(design, module, package_pb.modules.add())
+
+    for name, module in design.external_modules.items():
+      CircuitWriter.ToExternalModule(module, package_pb.ext_modules.add())
 
     return package_pb
 
@@ -272,7 +318,14 @@ class CircuitWriter():
       # by the serialiser?
     for instance_pb in module_pb.instances:
       instance = CircuitWriter.FromInstance(instance_pb, module.signals)
+
+      if instance.module_name == 'SHORT':
+        assignment = CircuitWriter.FromShortInstance(instance)
+        module.assignments[assignment.left] = assignment
+        continue
+
       module.instances[instance.name] = instance
+
     for param_pb in module_pb.parameters:
       name = param_pb.name
       instance.default_parameters[name] = CircuitWriter.FromParameter(param_pb)
@@ -307,24 +360,51 @@ class CircuitWriter():
     raise Exception(f'Cannot interpret Parameter {param_pb}')
 
   @staticmethod
-  def FromConnection(port_name, conn_pb, known_signals={}):
-    connection = circuit.Connection(port_name)
-    referenced_signals = []
-    target = conn_pb.target
-    set_field = target.WhichOneof('stype')
+  def FromConcat(concat_pb, known_signals):
+    parts = []
+    for part in concat_pb.parts:
+      pass
+      
+    concatenation = circuit.Concatenation(parts)
+    return concatenation
+
+  @staticmethod
+  def FromConnectionTarget(target_pb, known_signals):
+    set_field = target_pb.WhichOneof('stype')
     if set_field is None:
       return None
     if set_field == 'sig':
-      connection.signal = CircuitWriter.GetKnownSignal(conn_pb.target.sig, known_signals)
+      signal = CircuitWriter.GetKnownSignal(target_pb.sig, known_signals)
+      return signal
+    if set_field == 'slice':
+      slicey = CircuitWriter.FromSlice(target_pb.slice, known_signals)
+      return slicey
+    if set_field == 'concat':
+      concat = CircuitWriter.FromConcat(target_pb.concat, known_signals)
+      return concat
+    raise Exception(f'Unknown field set in proto ConnectionTarget: {set_field}')
+
+  @staticmethod
+  def FromConnection(port_name, conn_pb, known_signals={}):
+    connection = circuit.Connection(port_name)
+    referenced_signals = []
+    connectible = CircuitWriter.FromConnectionTarget(
+        conn_pb.target, known_signals)
+    if type(connectible) is circuit.Signal:
+      connection.signal = connectible
       referenced_signals.append(connection.signal)
-    elif set_field == 'slice':
-      connection.slice = CircuitWriter.FromSlice(conn_pb.target.slice, known_signals)
+    elif type(connectible) is circuit.Slice:
+      connection.slice = connectible
       connection.slice.Connect(connection)
       referenced_signals.append(connection.slice.signal)
-    elif set_field == 'concat':
-      raise Exception('Can\'t deal with concat types yet')
+    elif type(connectible) is circuit.Concatenation:
+      connection.concat = connectible
+      connection.concat.Connect(connection)
+      signals = [w.signal for w in
+                 connection.concat.EnumerateWires()]
+      referenced_signals.append(signals)
     else:
-      raise Exception(f'Unknown field set in Connection proto: {set_field}')
+      raise Exception('wtf')
     return connection, referenced_signals
 
   @staticmethod
@@ -337,7 +417,8 @@ class CircuitWriter():
     elif set_field == 'external':
       instance.module_name = instance_pb.module.external.name
     else:
-      raise Exception('Instance does not have module reference set')
+      raise Exception(
+          f'Instance {instance_pb.name} does not have module reference set')
     for param_pb in instance_pb.parameters:
       name = param_pb.name
       instance.parameters[name] = CircuitWriter.FromParameter(param_pb)
@@ -345,8 +426,9 @@ class CircuitWriter():
       port_name = conn_pb.portname
       connection, _ = CircuitWriter.FromConnection(port_name, conn_pb, known_signals)
       connection.instance = instance
-      slice_or_signal = connection.signal or connection.slice
-      slice_or_signal.Connect(connection)
+      connectible = (
+          connection.signal or connection.slice or connection.concat)
+      connectible.Connect(connection)
       instance.connections[port_name] = connection
     return instance
 
@@ -357,6 +439,8 @@ class CircuitWriter():
       print('warning: external module has qualifying domain that we ignore: '
             f'{module.name.domain}')
     module.name = module_pb.name.name
+    if module.name == 'SHORT':
+      raise Exception('This method does not handle SHORTs.')
     for signal_pb in module_pb.signals:
       signal = CircuitWriter.FromSignal(signal_pb)
       module.signals[signal.name] = signal
@@ -374,9 +458,9 @@ class CircuitWriter():
       module = CircuitWriter.FromModule(module_pb)
       design.AddModule(module.name, module)
     for module_pb in package_pb.ext_modules:
-      module = CircuitWriter.FromExternalModule(module_pb)
-      if module.name in circuit.PRIMITIVE_MODULES:
+      if module_pb.name.name in circuit.PRIMITIVE_MODULES:
         continue
+      module = CircuitWriter.FromExternalModule(module_pb)
       design.external_modules[module.name] = module
 
     for module_name, definitions in design.modules_by_name_then_path.items():
@@ -397,7 +481,6 @@ class CircuitWriter():
                 f'Instance {instance_name} of module {module_name} refers '
                 f'instantiates unknown module {instance_of}')
           instance.module = referenced
-
 
   def ReadProtoToDesign(self, filename):
     package_pb = circuit_pb.Package()

@@ -61,6 +61,7 @@ from spice_util import NumericalValue, SIUnitPrefix
 CAPACITOR = None
 RESISTOR = None
 INDUCTOR = None
+SHORT = None
 PRIMITIVE_MODULES = {}
 
 
@@ -316,18 +317,19 @@ class Concatenation:
   def Connect(self, to, index=None):
     if index is None:
       # TODO(aryap): just connect every part?
-      raise NotImplementedError(
-          'not sure how to connect a whole concat to something')
-
-    self.parts_by_index[i].Connect(to, index)
+      for wire in self.wires:
+        wire.signal.Connect(to, index=wire.index)
+      return
+    self.parts_by_index[index].Connect(to)
 
   def Connects(self, index=None):
     if index is None:
-      # TODO(aryap): just connect every part?
-      raise NotImplementedError(
-          'not sure how to do Connects on a whole concat to something')
+      all_connected = set()
+      for wire in self.wires:
+        all_connected.update(wire.Connects())
+      return all_connected
 
-    return self.parts_by_index[i].Connects(index)
+    return self.parts_by_index[index].Connects()
 
   def EnumerateWires(self):
     return self.wires
@@ -392,13 +394,25 @@ class Connection:
 
     return self.instance.module.ports[self.port_name].direction
 
+  def Connect(self, connectible):
+    if type(connectible) is Signal:
+      self.signal = connectible
+    elif type(connectible) is Slice:
+      self.slice = connectible
+    elif type(connectible) is Concatenation:
+      self.concat = connectible
+    elif type(connectible) is Wire:
+      self.slice = Slice()
+      self.slice.signal = connectible.signal
+      self.slice.top = connectible.index
+      self.slice.bottom = connectible.index
+
   def GetConnected(self):
     if self.signal is not None:
       return self.signal
     if self.slice is not None:
       return self.slice
-    if self.concat is not None:
-      return self.concat
+    if self.concat is not None: return self.concat
     return None
 
   def GetConnectedSignal(self, index=None):
@@ -1399,11 +1413,19 @@ def DefinePrimitives():
   _ = INDUCTOR.GetOrCreatePort('B', width=1, direction=Port.Direction.INOUT)
   INDUCTOR.default_parameters['inductance'] = NumericalValue(0.0, None)
 
+  global SHORT
+  SHORT = ExternalModule()
+  SHORT.name = 'SHORT'
+  SHORT.is_passive = True
+  _ = SHORT.GetOrCreatePort('A', width=1, direction=Port.Direction.INOUT)
+  _ = SHORT.GetOrCreatePort('B', width=1, direction=Port.Direction.INOUT)
+
   global PRIMITIVE_MODULES
   PRIMITIVE_MODULES[CAPACITOR.name] = CAPACITOR
   PRIMITIVE_MODULES[RESISTOR.name] = RESISTOR
   PRIMITIVE_MODULES[INDUCTOR.name] = INDUCTOR
+  PRIMITIVE_MODULES[SHORT.name] = SHORT
 
 
-# This sets up the global CAPACITOR, RESISTOR and INDUCTOR instances.
+# This sets up the global CAPACITOR, RESISTOR, INDUCTOR and SHORT instances.
 DefinePrimitives()

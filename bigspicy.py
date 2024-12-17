@@ -172,6 +172,9 @@ def WithOptions(options: optparse.Values):
     design.Link()
     design.CheckPowerAndGround()
 
+  # Done reading. Now do interesting things with model.
+  design.MakeModulesUnique()
+
   if options.show_design:
     design.Show()
 

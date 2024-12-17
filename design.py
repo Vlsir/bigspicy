@@ -93,6 +93,45 @@ class Design():
     except:
       return None
 
+  # It's possible when merging definitions for various modules, which have been
+  # created independently, that there will arise conflicting module names. This
+  # happens, for example, when macros are hardened separately by flows that
+  # create locally-significant modules like "my_mux", which differe among
+  # macros, but which all share the name "my_mux". We rely on a
+  # longest-common-prefix-based lookup to find the appropriate reference when
+  # parsing these from Verilog, and ??? when parsing SPEF.
+  #
+  # Anyway, when all is said and done, we can make the design sane by generating
+  # unique names for each of these overloaded modules.
+  def MakeModulesUnique(self):
+    new_modules_dict = collections.defaultdict(dict)
+
+    # 1. Find all modules with multiple definitions.
+    for module_name, definitions in self.modules_by_name_then_path.items():
+      if len(definitions) < 2:
+        new_modules_dict[module_name] = definitions
+        continue
+
+      count = 0
+      for path, module in definitions.items():
+        old_name = module.name
+        module.name = f'{old_name}_{count}'
+        count += 1
+        new_modules_dict[module.name][path] = module
+        print(f'renamed {old_name} -> {module.name}')
+
+    # 2. Check that all instances have correct names for their instantiated
+    # modules. I'm not actually sure why this field of Instance exists, but
+    # whatever.
+    for module_name, definitions in self.modules_by_name_then_path.items():
+      for path, module in definitions.items():
+        for instance_name, instance in module.instances.items():
+          if instance.module is not None and (
+              instance.module_name != instance.module.name):
+            instance.module_name = instance.module.name
+
+    self.modules_by_name_then_path = new_modules_dict
+
   def ParseVerilog(self, verilog_files, include_paths, defines):
     return verilog.DesignReader.ParseVerilog(
       design=self,
@@ -168,6 +207,7 @@ class Design():
 
   def ParseSPEF(self, spef_files):
     for f in spef_files:
+      print(f'reading spef: {f}')
       spef_reader = spef.SPEFReader('VSS')
       module = spef_reader.ReadSPEF(f)
       self.AddModuleFromSPEF(module, path=f)
