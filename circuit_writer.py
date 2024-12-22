@@ -435,9 +435,12 @@ class CircuitWriter():
   @staticmethod
   def FromExternalModule(module_pb):
     module = circuit.ExternalModule()
+    if module_pb.name is None:
+      print('warning: module with no name')
+      return None
     if module_pb.name.domain:
       print('warning: external module has qualifying domain that we ignore: '
-            f'{module.name.domain}')
+            f'{module_pb.name.domain}')
     module.name = module_pb.name.name
     if module.name == 'SHORT':
       raise Exception('This method does not handle SHORTs.')
@@ -461,6 +464,8 @@ class CircuitWriter():
       if module_pb.name.name in circuit.PRIMITIVE_MODULES:
         continue
       module = CircuitWriter.FromExternalModule(module_pb)
+      if module is None:
+        continue
       design.external_modules[module.name] = module
 
     for module_name, definitions in design.modules_by_name_then_path.items():

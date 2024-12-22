@@ -54,10 +54,11 @@ def DefineOptions(optparser):
   optparser.add_option('--verilog_include', dest='verilog_includes', default=[], action='append', help='verilog include paths')
   optparser.add_option('--verilog_defines', dest='verilog_defines', default=[], action='append', help='verilog macro definitions')
   optparser.add_option('--spef', dest='spef_files', default=[], action='append', help='spef files')
-  
-  # FIXME: what is the difference between these two "spice" options? 
+
+  # FIXME: Document the difference between the --spice and --spice_header options.
   optparser.add_option('--spice', dest='spice_files', default=[], action='append', help='read spice file contents. Subcircuits are read to circuit.Modules')
   optparser.add_option('--spice_header', dest='spice_header_files', default=[], action='append', help='read spice file headers. Subcircuits are read for port order and stored as ExternalModules')
+  optparser.add_option('--spice_skip_comments', dest='spice_skip_comments', default=False, action='store_true', help='skip comments describing internal model to Spice files we write')
 
   optparser.add_option('-s', '--dump_spice', dest='dump_spice', default=None, action='store', help='big spice file to write out')
   optparser.add_option('--test_manifest', dest='test_manifest', default=None, action='store', help='read this test manifest and try to find and add the results')
@@ -287,7 +288,11 @@ def WithOptions(options: optparse.Values):
     writer.WriteDesignToTextProto(save_file + '.txt')
 
   if options.dump_spice is not None:
-    spice_writer = spice.SpiceWriter(design, flatten=options.flatten_spice)
+    spice_writer = spice.SpiceWriter(
+        design,
+        flatten=options.flatten_spice,
+        add_comments=not options.spice_skip_comments
+    )
     spice_file = PrefixRelativeName(output_directory, options.dump_spice)
     spice_writer.WriteTop(spice_file)
     print(f'wrote top module ({top.name}) spice module: {spice_file}')

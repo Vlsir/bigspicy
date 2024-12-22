@@ -58,7 +58,7 @@ class SpiceSubckt():
     """
     module = circuit.Module()
     module.name = self.name
-    
+
     # Since we're building this from a Spice .subckt definition, all ports are
     # inout and there are no buses. Right?
     for port in self.ports:
@@ -69,6 +69,7 @@ class SpiceSubckt():
       module.default_parameters[key] = value
 
     for spice_inst in self.instances:
+      instance = circuit.Instance()
       instance = circuit.Instance()
       instance.name = spice_inst.name
       module.instances[instance.name] = instance
@@ -193,7 +194,7 @@ class SpiceReader():
         pass
       elif first_token.startswith('c'):
         pass
-        
+
     line = ''
     i = 0
     while i < len(lines):
@@ -289,7 +290,7 @@ class SpiceReader():
 
 
 class SpiceWriter():
-  def __init__(self, design, flatten=False):
+  def __init__(self, design, flatten=False, add_comments=True):
     self.design = design
     self.default_connections = {
         'VSS': circuit.Signal('VSS'),
@@ -298,6 +299,7 @@ class SpiceWriter():
         'VPWR': circuit.Signal('VPWR'),
     }
     self.flatten = flatten
+    self.add_comments = add_comments
     self._ResetCounters()
 
   def _ResetCounters(self):
@@ -420,10 +422,12 @@ class SpiceWriter():
       params['C'] = capacitance.XyceFormat()
       del params['capacitance']
     else:
-      type_name = module.name 
+      type_name = module.name
 
     params_out = ' '.join('{}={}'.format(k, v) for k, v in params.items())
-    out = f'** {instance}\n'
+    out = ''
+    if self.add_comments:
+        out = f'** {instance}\n'
     instantiation = f'{instance_name} {connections} {type_name} {params_out}'
     if skipped:
       out += f'** {instantiation} [skipped {skipped}]'
@@ -433,7 +437,7 @@ class SpiceWriter():
 
   def FlattenedInstance(self, instance, prefix=None):
     module = instance.module
-    
+
     signal_map = {}
 
     # TODO(growly): module params!
@@ -449,7 +453,9 @@ class SpiceWriter():
       internal_signal_name = self.SpiceSignalName(module.ports[port_name].signal)
       signal_map[internal_signal_name] = self.SpiceSignalName(signal)
 
-    out = f'** replacing {instance.name} with the contents of {instance.module_name}\n'
+    out = ''
+    if self.add_comments:
+        out = f'** replacing {instance.name} with the contents of {instance.module_name}\n'
     for child_instance in module.instances.values():
       # If it's a Module, it's internal, and we know the contents. Otherwise
       # it would be an ExternalModule.
@@ -559,7 +565,7 @@ class DelayMeasurement:
     # Sink, a.k.a. target.
     self.sink_wire = sink_wire
     self.sink_value = None
-    
+
 
 # TODO(growly): Merge 'DelayMeasurement' and 'Measurement', since they both
 # model the .MEASURE command.
@@ -623,7 +629,7 @@ class FFTSpec:
     self.format = 'UNORM'  # or NORM
 
     # To crudely indicate that this signal is part of the subcircuit in the
-    # Spice test, this indicated the of a subcircuit instance we prefix 
+    # Spice test, this indicated the of a subcircuit instance we prefix
     # when specifying which signal to FFT. This is a gross and I'm sad.
     # TODO(growly): Tidy up how spice tests are represented. Make consistent
     # how we indicate that a signal belongs to a subcircuit.
@@ -699,7 +705,7 @@ class SinusoidalInput(InputWaveform):
     self.amplitude_v = amplitude_v
     self.frequency_hz = frequency_hz
     self.delay_s = delay_s
-    self.attentuation_factor = attentuation_factor  
+    self.attentuation_factor = attentuation_factor
     self.phase = phase
 
   def SpiceLine(self, device_name):
