@@ -122,9 +122,9 @@ class CircuitWriter():
       else:
         store_pb = param_pb.value
       if isinstance(actual_value, float):
-        store_pb.double = actual_value
+        store_pb.float_value = actual_value
       elif isinstance(actual_value, int) or isinstance(actual_value, long):
-        store_pb.value.prefixed.integer = actual_value
+        store_pb.int64_value = actual_value
       else:
         raise Exception(f'Unknown numerical type: {type(value)} for {value}')
     elif isinstance(value, str):
@@ -352,7 +352,7 @@ class CircuitWriter():
     if set_value == 'prefixed':
       prefixed_pb = param_pb.value.prefixed
       set_inner_value = prefixed_pb.WhichOneof('number')
-      if set_inner_value in ('integer', 'double'):
+      if set_inner_value in ('int64_value', 'double_value'):
         # This is a numerical value.
         value = getattr(param_pb.value.prefixed, set_inner_value)
         prefix = CircuitWriter.FromSIPrefix(prefixed_pb.prefix)
