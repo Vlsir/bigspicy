@@ -105,7 +105,7 @@ using the `--spice_header`/`--spice` arguments, e.g:
 ```
 git submodule update --init   # Make sure we pull from Vlsir/schema-proto the
                               # first time.
-protoc --proto_path vlsir vlsir/*.proto vlsir/*/*.proto --python_out=.
+protoc --proto_path vlsir/protos vlsir/protos/*.proto vlsir/protos/*/*.proto --python_out=.
 protoc proto/*.proto --python_out=.
 ```
 
