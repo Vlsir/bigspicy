@@ -18,6 +18,7 @@
 import os
 import re
 import optparse
+import sys
 from optparse import OptionParser
 import glob
 
@@ -61,6 +62,7 @@ def DefineOptions(optparser):
   optparser.add_option('--spice_skip_comments', dest='spice_skip_comments', default=False, action='store_true', help='skip comments describing internal model to Spice files we write')
 
   optparser.add_option('-s', '--dump_spice', dest='dump_spice', default=None, action='store', help='big spice file to write out')
+  optparser.add_option('--all', dest='dump_all', default=False, action='store_true', help='write all modules to spice file')
   optparser.add_option('--test_manifest', dest='test_manifest', default=None, action='store', help='read this test manifest and try to find and add the results')
   optparser.add_option('--test_analysis', dest='test_analysis', default=None, action='store', help='read this analysis proto and try to find and add the results')
 
@@ -179,12 +181,26 @@ def WithOptions(options: optparse.Values):
   if options.show_design:
     design.Show()
 
+
+  if options.dump_spice is not None and options.dump_all:
+    spice_writer = spice.SpiceWriter(
+        design,
+        flatten=options.flatten_spice,
+        add_comments=not options.spice_skip_comments
+    )
+    spice_file = PrefixRelativeName(output_directory, options.dump_spice)
+    spice_writer.WriteAll(spice_file)
+    print(f'wrote all modules to: {spice_file}')
+
   # Find top.
   if options.top_name:
     top = design.FindTop(options.top_name)
     if top is None:
-      raise Exception(f'top not found: {options.top_name}')
-      sys.exit(1)
+      print(f'error: top not found: {options.top_name}')
+      sys.exit(2)
+  else:
+    print('warning: no top given')
+    sys.exit(1)
 
   analyser = spice_analyser.SpiceAnalyser(design, output_directory, spice_libs)
 
