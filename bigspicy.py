@@ -198,7 +198,7 @@ def WithOptions(options: optparse.Values):
   # through two different pathways, here and at the end:
 
   # (legacy) Write spice decks using internal Xyce dialect.
-  if options.dump_spice is not None and options.dump_all:
+  if options.dump_spice is not None and options.spice_write_all:
     spice_writer = spice.SpiceWriter(
         design,
         flatten=options.flatten_spice,
