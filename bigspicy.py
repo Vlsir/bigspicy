@@ -15,10 +15,13 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+# This is annoying.
+import sys
+sys.path.extend(['vlsir/VlsirTools', 'vlsir/bindings/python'])
+
 import os
 import re
 import optparse
-import sys
 from optparse import OptionParser
 import glob
 
@@ -27,6 +30,8 @@ import circuit_writer
 import spice
 import spice_analyser
 from design import Design
+
+from vlsirtools.netlist.spectre import SpectreNetlister
 
 
 def PrefixRelativeName(prefix, name):
@@ -60,9 +65,15 @@ def DefineOptions(optparser):
   optparser.add_option('--spice', dest='spice_files', default=[], action='append', help='read spice file contents. Subcircuits are read to circuit.Modules')
   optparser.add_option('--spice_header', dest='spice_header_files', default=[], action='append', help='read spice file headers. Subcircuits are read for port order and stored as ExternalModules')
   optparser.add_option('--spice_skip_comments', dest='spice_skip_comments', default=False, action='store_true', help='skip comments describing internal model to Spice files we write')
+  optparser.add_option('--spice_write_all', dest='spice_write_all', default=False, action='store_true', help='write all modules when emitting spice files')
 
-  optparser.add_option('-s', '--dump_spice', dest='dump_spice', default=None, action='store', help='big spice file to write out')
-  optparser.add_option('--all', dest='dump_all', default=False, action='store_true', help='write all modules to spice file')
+  # Dump spice in Xyce-compatible format using the internal (legacy) lib.
+  optparser.add_option('--dump_spice', dest='dump_spice', default=None, action='store', help='big spice file to write out')
+
+  # Write spice in a different format.
+  optparser.add_option('-s', '--write_spice', dest='write_spice', default=None, action='store', help='write spice file using VLSIR netlisters')
+  optparser.add_option('--write_spice_type', dest='write_spice_type', default='spectre', action='store', help='spice dialect to write through VLSIR netlister, valid: {spectre, xyce, ngspice}')
+
   optparser.add_option('--test_manifest', dest='test_manifest', default=None, action='store', help='read this test manifest and try to find and add the results')
   optparser.add_option('--test_analysis', dest='test_analysis', default=None, action='store', help='read this analysis proto and try to find and add the results')
 
@@ -74,7 +85,7 @@ def DefineOptions(optparser):
 
   # TODO(growly): Helper options.
   optparser.add_option('--import', dest='import_circuit', default=False, action='store_true', help='import a circuit from verilog, SPEF, spice, etc')
-  optparser.add_option('--load', dest='load', default=None, action='store', help='read circuit proto containing netlist')
+  optparser.add_option('--load', dest='load', default=[], action='append', help='read circuit proto containing netlist')
   optparser.add_option('--save', dest='save', default=None, action='store', help='write circuit proto containing final netlist to this file')
   optparser.add_option('--show', dest='show_design', default=False, action='store_true', help='print summary of loaded design')
 
@@ -142,8 +153,8 @@ def WithOptions(options: optparse.Values):
     file_names.append(options.test_manifest)
   if options.test_analysis is not None:
     file_names.append(options.test_analysis)
-  if options.load is not None:
-    file_names.append(options.load)
+  if options.load:
+    file_names.extend(options.load)
 
   FilesExistOrError(file_names)
 
@@ -154,7 +165,8 @@ def WithOptions(options: optparse.Values):
   if options.load:
     # Read an existing circuit description (netlist) from disk.
     reader = circuit_writer.CircuitWriter(design)
-    reader.ReadProtoToDesign(options.load)
+    for package_file in options.load:
+      reader.ReadProtoToDesign(package_file)
   elif options.import_circuit:
     if spice_headers:
       design.ParseSpiceDefinitions(spice_headers, headers_only=True)
@@ -181,7 +193,11 @@ def WithOptions(options: optparse.Values):
   if options.show_design:
     design.Show()
 
+  # FIXME(aryap): This function is way too long and is getting too complex.
+  # Refactor! In particular, we have two different ways of writing spice decks
+  # through two different pathways, here and at the end:
 
+  # (legacy) Write spice decks using internal Xyce dialect.
   if options.dump_spice is not None and options.dump_all:
     spice_writer = spice.SpiceWriter(
         design,
@@ -190,7 +206,15 @@ def WithOptions(options: optparse.Values):
     )
     spice_file = PrefixRelativeName(output_directory, options.dump_spice)
     spice_writer.WriteAll(spice_file)
-    print(f'wrote all modules to: {spice_file}')
+    print(f'(legacy) dumped all modules to: {spice_file}')
+
+  # Write spice decks using VLSIR.
+  if options.write_spice is not None and options.spice_write_all:
+    writer = circuit_writer.CircuitWriter(design)
+    package_pb = writer.ToCircuitProto()
+    with open(options.write_spice, 'w') as netlist_file:
+      netlister = SpectreNetlister(netlist_file)
+      netlister.write_package(package_pb)
 
   # Find top.
   if options.top_name:
@@ -303,6 +327,7 @@ def WithOptions(options: optparse.Values):
     writer.WriteDesignToProto(save_file)
     writer.WriteDesignToTextProto(save_file + '.txt')
 
+  # (legacy) Write spice decks using internal Xyce dialect.
   if options.dump_spice is not None:
     spice_writer = spice.SpiceWriter(
         design,
@@ -311,7 +336,7 @@ def WithOptions(options: optparse.Values):
     )
     spice_file = PrefixRelativeName(output_directory, options.dump_spice)
     spice_writer.WriteTop(spice_file)
-    print(f'wrote top module ({top.name}) spice module: {spice_file}')
+    print(f'dumped top module ({top.name}) spice module: {spice_file}')
 
 
 
