@@ -18,8 +18,8 @@ from google.protobuf import text_format
 
 import pdb
 import circuit
-import circuit_pb2 as circuit_pb
-import utils_pb2 as utils_pb
+import vlsir.circuit_pb2 as circuit_pb
+import vlsir.utils_pb2 as utils_pb
 from spice_util import SIUnitPrefix
 
 class CircuitWriter():
