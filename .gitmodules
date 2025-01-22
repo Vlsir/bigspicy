@@ -1,3 +1,0 @@
-[submodule "vlsir"]
-	path = vlsir
-	url = git@github.com:vlsir/schema-proto
