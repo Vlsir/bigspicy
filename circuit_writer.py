@@ -158,9 +158,14 @@ class CircuitWriter():
     return conn_pb
 
   @staticmethod
-  def ToInstance(instance, instance_pb):
+  def ToInstance(design, instance, instance_pb):
     instance_pb.name = instance.name
-    instance_pb.module.local = instance.module_name
+    if instance.module_name in design.modules_by_name_then_path:
+      instance_pb.module.local = instance.module_name
+    else:
+      # TODO: Recover domain information.
+      instance_pb.module.external.name = instance.module_name
+
     for name, value in instance.parameters.items():
       CircuitWriter.ToParameter(name, value, instance_pb.parameters.add())
     for port_name, connection in instance.connections.items():
@@ -221,7 +226,7 @@ class CircuitWriter():
     for name, signal in module.signals.items():
       CircuitWriter.ToSignal(signal, module_pb.signals.add())
     for name, instance in module.instances.items():
-      CircuitWriter.ToInstance(instance, module_pb.instances.add())
+      CircuitWriter.ToInstance(design, instance, module_pb.instances.add())
 
     if module.assignments:
       design.external_modules[circuit.SHORT.name] = circuit.SHORT

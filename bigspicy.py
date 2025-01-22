@@ -31,6 +31,7 @@ import spice
 import spice_analyser
 from design import Design
 
+from vlsirtools.netlist.spice import SpiceNetlister
 from vlsirtools.netlist.spectre import SpectreNetlister
 
 
@@ -72,7 +73,7 @@ def DefineOptions(optparser):
 
   # Write spice in a different format.
   optparser.add_option('-s', '--write_spice', dest='write_spice', default=None, action='store', help='write spice file using VLSIR netlisters')
-  optparser.add_option('--write_spice_type', dest='write_spice_type', default='spectre', action='store', help='spice dialect to write through VLSIR netlister, valid: {spectre, xyce, ngspice}')
+  optparser.add_option('--write_spice_type', dest='write_spice_type', default='generic', action='store', help='spice dialect to write through VLSIR netlister, valid: {generic, legacy, spectre, xyce, ngspice}')
 
   optparser.add_option('--test_manifest', dest='test_manifest', default=None, action='store', help='read this test manifest and try to find and add the results')
   optparser.add_option('--test_analysis', dest='test_analysis', default=None, action='store', help='read this analysis proto and try to find and add the results')
