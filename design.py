@@ -17,8 +17,10 @@ import verilog
 
 
 class Design():
-  def __init__(self):
+  def __init__(self, insert_floaters=False, scale_params=None):
     self.top = None
+    self.insert_floaters = insert_floaters
+    self.scale_params = scale_params
   
     # The list of modules for which we have definitions. The first key is the
     # module's name and the second key is the path (absolute) in which it was
@@ -38,6 +40,14 @@ class Design():
     self.external_modules[circuit.INDUCTOR.name] = circuit.INDUCTOR
     self.power_net_names = ['VDD', 'VPWR']
     self.ground_net_names = ['VSS', 'VGND']
+
+  def GetPortOrder(self, module_name):
+    module = self.GetModule(module_name)
+    if module:
+      return module.port_order
+    if module_name in self.external_modules:
+      return self.external_modules[module_name].port_order
+    return None
 
   def AddModule(self, module_name, module, path=None):
     try:

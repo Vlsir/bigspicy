@@ -767,6 +767,8 @@ class Module(ExternalModule):
     # The left object in the assignment becomes the index.
     self.assignments = {}
 
+    self.num_floating_nets_created = 0
+
     # TODO(aryap): Need to know what ground and power nets are.
 
     # How many 10^x of an Ohm. (None => x = 0)
@@ -777,6 +779,18 @@ class Module(ExternalModule):
     self.time_unit_prefix = None
     # How many 10^x of a Henry. (None => x = 0)
     self.inductance_unit_prefix = None
+
+  def MakeFloatingSignal(self, width=1):
+    floater_name = f'float_{self.num_floating_nets_created}'
+
+    # Make sure it's unique:
+    while floater_name in self.signals:
+      self.num_floating_nets_created += 1
+      floater_name = f'float_{self.num_floating_nets_created}'
+
+    self.num_floating_nets_created += 1
+
+    return self.GetOrCreateSignal(floater_name, width=width)
     
   @classmethod
   def FromVerilog(cls, ast_node: "verilog.ast.Node", path=None) -> "Module":
@@ -806,10 +820,10 @@ class Module(ExternalModule):
       for port_name, connection in instance.connections.items():
         print(f'\t\t\t{port_name}: {connection}')
 
-  # Critical paths are those which constrain the overall clock speed of the circuit.
-  # That means they are the slowest path(s) between any two sequential elements
-  # (latches, flops). Ports are not sequential per se, but since we don't know
-  # what they connect to we have to consider them our boundary.
+  # Critical paths are those which constrain the overall clock speed of the
+  # circuit. That means they are the slowest path(s) between any two sequential
+  # elements (latches, flops). Ports are not sequential per se, but since we
+  # don't know what they connect to we have to consider them our boundary.
   def FindCriticalPaths(self):
     raise NotImplementedError()
 

@@ -49,6 +49,7 @@ class CircuitWriter():
       SIUnitPrefix.MILLI: utils_pb.SIPrefix.MILLI,
       SIUnitPrefix.CENTI: utils_pb.SIPrefix.CENTI,
       SIUnitPrefix.DECI: utils_pb.SIPrefix.DECI,
+      SIUnitPrefix.UNIT: utils_pb.SIPrefix.UNIT,
       SIUnitPrefix.DECA: utils_pb.SIPrefix.DECA,
       SIUnitPrefix.HECTO: utils_pb.SIPrefix.HECTO,
       SIUnitPrefix.KILO: utils_pb.SIPrefix.KILO,
@@ -112,9 +113,12 @@ class CircuitWriter():
       CircuitWriter.ToSignal(signal, module_pb.signals.add())
 
   @staticmethod
-  def ToParameter(name, value, param_pb):
+  def ToParameter(name, value, param_pb, scale=None):
     param_pb.name = name
     if isinstance(value, circuit.NumericalValue):
+      if scale is not None:
+        value.MultiplyBy(scale)
+        value = value.Simplified()
       actual_value = value.value
       if value.unit is not None:
         param_pb.value.prefixed.prefix = CircuitWriter.ToSIPrefix(value.unit)
@@ -122,8 +126,14 @@ class CircuitWriter():
       else:
         store_pb = param_pb.value
       if isinstance(actual_value, float):
-        store_pb.float_value = actual_value
-      elif isinstance(actual_value, int) or isinstance(actual_value, long):
+        # Storing a boule value seems to be deprecated, so we store it as a
+        # string:
+        #store_pb.double_value = actual_value
+        # FIXME: This rounding is to deal with how annoyingly Python handles
+        # floats. A more thorough treatment of floats is needed to prevent 1000
+        # becoming "1.0000000000000002k".
+        store_pb.string_value = str(value.value) #format(value.value, '.5f')
+      elif isinstance(actual_value, int):
         store_pb.int64_value = actual_value
       else:
         raise Exception(f'Unknown numerical type: {type(value)} for {value}')
@@ -154,23 +164,43 @@ class CircuitWriter():
     elif connection.concat is not None:
       CircuitWriter.ToConcat(connection.concat, conn_pb.target.concat)
     else:
-      raise Exception(f'Cannot map disconnected Connection object: {connection}')
+      raise Exception(
+          f'Cannot map disconnected Connection object: {connection}')
     return conn_pb
 
   @staticmethod
-  def ToInstance(design, instance, instance_pb):
+  def ToInstance(design, module, instance, instance_pb):
     instance_pb.name = instance.name
-    if instance.module_name in design.modules_by_name_then_path:
-      instance_pb.module.local = instance.module_name
-    else:
+    parent_name = instance.module_name
+
+    if parent_name in design.modules_by_name_then_path:
+      instance_pb.module.local = parent_name
+    elif parent_name in design.external_modules:
       # TODO: Recover domain information.
-      instance_pb.module.external.name = instance.module_name
+      instance_pb.module.external.name = parent_name
 
     for name, value in instance.parameters.items():
-      CircuitWriter.ToParameter(name, value, instance_pb.parameters.add())
-    for port_name, connection in instance.connections.items():
-      if connection.IsDisconnected():
-        continue
+      CircuitWriter.ToParameter(
+          name,
+          value,
+          instance_pb.parameters.add(),
+          scale=design.scale_params)
+
+    port_order = design.GetPortOrder(parent_name)
+    if port_order is None:
+      port_order = instance.connections.keys()
+
+    for port_name in port_order:
+      if port_name not in instance.connections:
+        if not design.insert_floaters:
+          print(f'warning: port {port_name} on instance {instance.name} '
+                'has no Connection, and none will be made')
+          continue
+        floater_signal = module.MakeFloatingSignal(1)
+        connection = circuit.Connection(port_name)
+        connection.Connect(floater_signal)
+      else:
+        connection = instance.connections[port_name]
       CircuitWriter.ToConnection(
           port_name, connection, instance_pb.connections.add())
 
@@ -218,6 +248,9 @@ class CircuitWriter():
   @staticmethod
   def ToModule(design, module, module_pb):
     module_pb.name = module.name
+    for name, instance in module.instances.items():
+      CircuitWriter.ToInstance(
+          design, module, instance, module_pb.instances.add())
     for name, value in module.default_parameters.items():
       CircuitWriter.ToParameter(name, value, module_pb.parameters.add())
     for port_name in module.port_order:
@@ -225,8 +258,6 @@ class CircuitWriter():
       CircuitWriter.ToPort(port, module_pb.ports.add())
     for name, signal in module.signals.items():
       CircuitWriter.ToSignal(signal, module_pb.signals.add())
-    for name, instance in module.instances.items():
-      CircuitWriter.ToInstance(design, instance, module_pb.instances.add())
 
     if module.assignments:
       design.external_modules[circuit.SHORT.name] = circuit.SHORT

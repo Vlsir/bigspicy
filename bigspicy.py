@@ -35,6 +35,26 @@ from vlsirtools.netlist.spice import SpiceNetlister
 from vlsirtools.netlist.spectre import SpectreNetlister
 
 
+# Need something that tries a little to make an int out of a float, but not too
+# hard.
+def ToIntOrFloat(string):
+  if string is None:
+    return None
+  f = None
+  try:
+    f = float(string)
+  except ValueError:
+    return None
+  i = None
+  try:
+    i = int(string)
+  except ValueError:
+    i = int(f)
+  if i is not None and f is not None:
+    return i if i == f else f
+  return i or f
+
+
 def PrefixRelativeName(prefix, name):
   if name.startswith('/'):
     return name
@@ -67,6 +87,7 @@ def DefineOptions(optparser):
   optparser.add_option('--spice_header', dest='spice_header_files', default=[], action='append', help='read spice file headers. Subcircuits are read for port order and stored as ExternalModules')
   optparser.add_option('--spice_skip_comments', dest='spice_skip_comments', default=False, action='store_true', help='skip comments describing internal model to Spice files we write')
   optparser.add_option('--spice_write_all', dest='spice_write_all', default=False, action='store_true', help='write all modules when emitting spice files')
+  optparser.add_option('--spice_scale_params', dest='spice_scale_params', default=None, action='store', help='multiply all parameter values by this before writing spice deck')
 
   # Dump spice in Xyce-compatible format using the internal (legacy) lib.
   optparser.add_option('--dump_spice', dest='dump_spice', default=None, action='store', help='big spice file to write out')
@@ -83,6 +104,8 @@ def DefineOptions(optparser):
 
   optparser.add_option('--delays_csv', dest='delays_csv', default=None, action='store', help='write CSV of measured delays')
   optparser.add_option('--input_caps_csv', dest='input_caps_csv', default='input_caps.csv', action='store', help='write CSV of measured delays')
+
+  optparser.add_option('--insert_floaters', dest='insert_floaters', default=False, action='store_true', help='explicitly insert into the model floating nets for disconnected ports (where ports are known')
 
   # TODO(growly): Helper options.
   optparser.add_option('--import', dest='import_circuit', default=False, action='store_true', help='import a circuit from verilog, SPEF, spice, etc')
@@ -161,14 +184,17 @@ def WithOptions(options: optparse.Values):
 
   spice_libs = [os.path.abspath(path) for path in spice_headers]
 
-  design = Design()
+  design = Design(
+      insert_floaters=options.insert_floaters,
+      scale_params=ToIntOrFloat(options.spice_scale_params))
 
   if options.load:
     # Read an existing circuit description (netlist) from disk.
     reader = circuit_writer.CircuitWriter(design)
     for package_file in options.load:
       reader.ReadProtoToDesign(package_file)
-  elif options.import_circuit:
+
+  if options.import_circuit:
     if spice_headers:
       design.ParseSpiceDefinitions(spice_headers, headers_only=True)
 
@@ -214,7 +240,7 @@ def WithOptions(options: optparse.Values):
     writer = circuit_writer.CircuitWriter(design)
     package_pb = writer.ToCircuitProto()
     with open(options.write_spice, 'w') as netlist_file:
-      netlister = SpectreNetlister(netlist_file)
+      netlister = SpiceNetlister(netlist_file)
       netlister.write_package(package_pb)
 
   # Find top.

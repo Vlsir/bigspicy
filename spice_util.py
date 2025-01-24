@@ -24,6 +24,8 @@ from enum import Enum
 FFTResultDataPoint = collections.namedtuple(
         'FFTResultDataPoint', ['index', 'freq_hz', 'magnitude', 'phase_deg'])
 
+FLOAT_ERROR_EPSILON = 1E-10
+
 class NumericalValue():
   def __init__(self, value, unit=None):
     self.value = value
@@ -35,6 +37,37 @@ class NumericalValue():
   def __str__(self):
     letter = self.unit.Letter() if self.unit else ''
     return f'{self.value}{letter}'
+
+  def UnitValue(self):
+    scale = self.unit.value if self.unit else 0
+    return self.value * math.pow(10, scale)
+
+  def MultiplyBy(self, scale):
+    self.value = self.value * scale
+
+  def Simplified(self):
+    # Reduce value by increasing prefix value.
+    simpler = None
+
+    original = self.UnitValue()
+    log_value = math.log10(original)
+    
+    new_unit = None
+    for candidate in _SIMPLIFICATION_LADDER:
+      if candidate.value > log_value:
+        break
+      new_unit = candidate
+
+    if new_unit is None:
+      return NumericalValue(self.value, self.unit)
+
+    new_value = original / math.pow(10, new_unit.value)
+    int_new_value = int(new_value)
+
+    if int_new_value - new_value < FLOAT_ERROR_EPSILON:
+      new_value = int_new_value
+
+    return NumericalValue(new_value, new_unit)
 
   def InBaseUnits(self):
     new_value = self.value
@@ -92,6 +125,7 @@ class SIUnitPrefix(Enum):
   MILLI = -3
   CENTI = -2
   DECI = -1
+  UNIT = 0
   DECA = 1
   HECTO = 2
   KILO = 3
@@ -107,6 +141,31 @@ class SIUnitPrefix(Enum):
     return _LETTER_BY_UNIT[self]
 
 
+_SIMPLIFICATION_LADDER = [
+  SIUnitPrefix.YOCTO,
+  SIUnitPrefix.ZEPTO,
+  SIUnitPrefix.ATTO,
+  SIUnitPrefix.FEMTO,
+  SIUnitPrefix.PICO,
+  SIUnitPrefix.NANO,
+  SIUnitPrefix.MICRO,
+  SIUnitPrefix.MILLI,
+  #SIUnitPrefix.CENTI,
+  #SIUnitPrefix.DECI,
+  SIUnitPrefix.UNIT,
+  #SIUnitPrefix.DECA,
+  #SIUnitPrefix.HECTO,
+  SIUnitPrefix.KILO,
+  SIUnitPrefix.MEGA,
+  SIUnitPrefix.GIGA,
+  SIUnitPrefix.TERA,
+  SIUnitPrefix.PETA,
+  SIUnitPrefix.EXA,
+  SIUnitPrefix.ZETTA,
+  SIUnitPrefix.YOTTA
+]
+
+
 _LETTER_BY_UNIT = {
   SIUnitPrefix.YOCTO: 'y',
   SIUnitPrefix.ZEPTO: 'z',
@@ -118,6 +177,7 @@ _LETTER_BY_UNIT = {
   SIUnitPrefix.MILLI: 'm',
   SIUnitPrefix.CENTI: 'c',
   SIUnitPrefix.DECI: 'd',
+  SIUnitPrefix.UNIT: '',
   SIUnitPrefix.DECA: 'da',
   SIUnitPrefix.HECTO: 'h',
   SIUnitPrefix.KILO: 'k',
